@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nexwall — Log Viewer</title>
+<style>
+:root{
+  --blue:#1976d2; --blue-dark:#005cb2;
+  --red:#ef4444; --red-bg:#fef2f2; --red-text:#b91c1c;
+  --green:#059669; --green-bg:#ecfdf5; --green-text:#047857;
+  --amber:#d97706; --amber-bg:#fffbeb; --amber-text:#92400e;
+  --gray-50:#fafafa; --gray-100:#f3f3f3; --gray-200:#e5e7eb;
+  --gray-500:#6a7282; --gray-700:#364153; --gray-900:#101828;
+  --border:#e5e7eb;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Inter Variable",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--gray-50);color:var(--gray-900);font-size:13px}
+header{background:#fff;border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;justify-content:space-between}
+header h1{font-size:16px;margin:0;font-weight:600;color:var(--gray-900)}
+header h1 span{color:var(--blue-dark)}
+.tabs{display:flex;gap:2px;padding:0 20px;background:#fff;border-bottom:1px solid var(--border);overflow-x:auto}
+.tab{padding:10px 14px;cursor:pointer;font-weight:500;color:var(--gray-500);border-bottom:2px solid transparent;font-size:12.5px;white-space:nowrap}
+.tab.active{color:var(--blue-dark);border-bottom-color:var(--blue-dark)}
+.toolbar{display:flex;gap:10px;align-items:center;padding:12px 20px;background:#fff;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.toolbar input[type=text]{flex:1;min-width:220px;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px}
+.toolbar select,.toolbar button{padding:7px 10px;border:1px solid var(--border);border-radius:6px;background:#fff;font-size:13px;cursor:pointer;color:var(--gray-700)}
+.toolbar button.primary{background:var(--blue-dark);color:#fff;border-color:var(--blue-dark)}
+.toolbar label{display:flex;align-items:center;gap:5px;color:var(--gray-700);font-size:13px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;padding:0 20px 10px;background:#fff}
+.chip{background:var(--gray-100);border:1px solid var(--border);border-radius:14px;padding:4px 10px;font-size:12px;display:flex;gap:6px;align-items:center;color:var(--gray-700)}
+.chip b{color:var(--gray-900)}
+.chip .x{cursor:pointer;color:var(--gray-500);font-weight:700}
+.chip .x:hover{color:var(--red)}
+#debug{margin:0 20px 10px;padding:8px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;font-size:11px;color:#92400e;font-family:monospace;white-space:pre-wrap;word-break:break-all}
+.stats{display:flex;gap:12px;padding:12px 20px;background:#fff;border-bottom:1px solid var(--border)}
+.stat{flex:1;border:1px solid var(--border);border-radius:8px;padding:10px 14px}
+.stat .n{font-size:20px;font-weight:700}
+.stat .l{font-size:11px;color:var(--gray-500);text-transform:uppercase;letter-spacing:.03em}
+.stat.total .n{color:var(--gray-900)}
+.stat.blocked .n{color:var(--red-text)}
+.stat.allowed .n{color:var(--green-text)}
+main{padding:0 20px 30px}
+table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-top:12px}
+thead th{text-align:left;background:var(--gray-100);color:var(--gray-700);font-size:11px;text-transform:uppercase;letter-spacing:.03em;padding:9px 10px;border-bottom:1px solid var(--border)}
+tbody td{padding:8px 10px;border-bottom:1px solid var(--gray-100);font-size:12.5px;vertical-align:top}
+tbody tr:hover{background:var(--gray-50)}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+.badge.block{background:var(--red-bg);color:var(--red-text)}
+.badge.allow{background:var(--green-bg);color:var(--green-text)}
+.badge.other{background:var(--amber-bg);color:var(--amber-text)}
+.clickable{cursor:pointer;color:var(--blue-dark)}
+.clickable:hover{text-decoration:underline}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
+.msg-toggle{cursor:pointer;color:var(--gray-500);font-size:11px}
+.msg-full{white-space:pre-wrap;word-break:break-all;color:var(--gray-500);margin-top:4px;font-size:11px}
+.empty{padding:40px;text-align:center;color:var(--gray-500)}
+.sev-emerg,.sev-alert,.sev-crit,.sev-err{color:var(--red-text);font-weight:600}
+.sev-warning{color:var(--amber-text);font-weight:600}
+.sev-notice,.sev-info,.sev-debug{color:var(--gray-700)}
+footer.note{padding:8px 20px;color:var(--gray-500);font-size:11px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Nexwall <span>Log Viewer</span></h1>
+  <div style="font-size:11px;color:var(--gray-500)" id="lastUpdate">—</div>
+</header>
+<div class="tabs" id="tabsBar"></div>
+
+<div class="toolbar">
+  <input type="text" id="freeText" placeholder="Buscar (IP, texto livre)...">
+  <select id="timeRange">
+    <option value="15m">Últimos 15 min</option>
+    <option value="1h" selected>Última 1 hora</option>
+    <option value="6h">Últimas 6 horas</option>
+    <option value="24h">Últimas 24 horas</option>
+    <option value="7d">Últimos 7 dias</option>
+  </select>
+  <select id="actionFilter" class="action-only">
+    <option value="">Todas as ações</option>
+    <option value="block">Somente bloqueados</option>
+    <option value="allow">Somente permitidos</option>
+  </select>
+  <label><input type="checkbox" id="autoRefresh" checked> Auto-refresh (10s)</label>
+  <button class="primary" id="btnSearch">Buscar</button>
+  <button id="btnClear">Limpar filtros</button>
+</div>
+<div class="chips" id="chips"></div>
+<div id="debug"></div>
+<div class="stats" id="statsBar">
+  <div class="stat total"><div class="n" id="statTotal">—</div><div class="l">Eventos no período</div></div>
+  <div class="stat blocked action-only"><div class="n" id="statBlocked">—</div><div class="l">Bloqueados</div></div>
+  <div class="stat allowed action-only"><div class="n" id="statAllowed">—</div><div class="l">Permitidos</div></div>
+</div>
+
+<main>
+  <table id="dataTable">
+    <thead id="tableHead"></thead>
+    <tbody id="tableBody"><tr><td class="empty">Carregando...</td></tr></tbody>
+  </table>
+</main>
+<footer class="note" id="footerNote">Fonte: VictoriaLogs</footer>
+
+<script>
+const API = '/logs-viewer/api';
+let filters = {};
+let timer = null;
+
+const PROTO_NAMES = {'1':'ICMP','2':'IGMP','6':'TCP','17':'UDP','41':'IPv6','47':'GRE','50':'ESP','51':'AH','58':'ICMPv6','132':'SCTP'};
+
+// Each tab describes how to build its LogsQL query and how to render rows.
+// kind: 'netfilter' -> kernel firewall lines, fields extracted via extract_regexp
+//       'ips'        -> Snort JSON alerts (imfile-tailed), fields via unpack_json
+//       'simple'     -> plain syslog lines (Time/App/Severity/Message)
+const TABS = [
+  { id:'fw',     label:'Tráfego de Firewall',      kind:'netfilter', extra:'' },
+  { id:'threat', label:'Threat Shield / GeoIP',    kind:'netfilter', extra:'nf_action:~"(?i)banip"' },
+  { id:'ips',    label:'IPS / IDS',                kind:'ips' },
+  { id:'dpi',    label:'DPI',                      kind:'simple', base:'app_name:netifyd' },
+  { id:'dns',    label:'Proteção DNS',             kind:'simple', base:'app_name:dnsmasq' },
+  { id:'vpn',    label:'VPN',                      kind:'simple', base:'(app_name:openvpn OR app_name:ipsec)' },
+  { id:'sys',    label:'Logs do Sistema',          kind:'simple', base:'' },
+];
+let activeTab = TABS[0];
+
+function esc(s){ return (s===undefined||s===null) ? '' : String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function fwRegex(){
+  return '(?P<nf_action>[^:]+): IN=(?P<in_if>[^ ]*) OUT=(?P<out_if>[^ ]*).*?SRC=(?P<src_ip>[^ ]+) DST=(?P<dst_ip>[^ ]+).*?PROTO=(?P<proto>[^ ]+)(?: SPT=(?P<spt>[0-9]+) DPT=(?P<dpt>[0-9]+))?';
+}
+
+function classify(nfAction){
+  const a = (nfAction||'').toLowerCase();
+  if(a.includes('reject') || a.includes('drop') || a.includes('banip')) return 'block';
+  if(a.includes('accept') || a.includes('allow')) return 'allow';
+  return 'other';
+}
+
+function classifyIps(action){
+  const a = (action||'').toLowerCase();
+  if(a.includes('drop') || a.includes('block') || a.includes('reject')) return 'block';
+  if(a.includes('alert')) return 'other';
+  return 'other';
+}
+
+function buildChipQuery(){
+  return Object.entries(filters).map(([k,v]) => `${k}:"${v.replace(/"/g,'')}"`).join(' ');
+}
+
+function renderChips(){
+  const el = document.getElementById('chips');
+  el.innerHTML = '';
+  for(const [k,v] of Object.entries(filters)){
+    const chip = document.createElement('div');
+    chip.className = 'chip';
+    chip.innerHTML = `${esc(k)}: <b>${esc(v)}</b> <span class="x" data-k="${esc(k)}">×</span>`;
+    el.appendChild(chip);
+  }
+  el.querySelectorAll('.x').forEach(x => x.onclick = () => { delete filters[x.dataset.k]; renderChips(); runQuery(); });
+}
+
+function addFilter(k,v){ filters[k]=v; renderChips(); runQuery(); }
+
+function setDebug(msg){
+  const d = document.getElementById('debug');
+  if(d) d.textContent = msg;
+}
+
+async function vlQuery(query, limit){
+  const body = new URLSearchParams();
+  body.set('query', query);
+  body.set('limit', limit || 300);
+  let res;
+  try{
+    res = await fetch(`${API}/select/logsql/query`, {method:'POST', body});
+  } catch(netErr){
+    setDebug('ERRO DE REDE: ' + netErr.message + '\nQuery: ' + query);
+    throw netErr;
+  }
+  const text = await res.text();
+  if(!res.ok){
+    setDebug('HTTP ' + res.status + '\nQuery: ' + query + '\nResposta: ' + text.slice(0,500));
+    throw new Error('HTTP ' + res.status + ': ' + text.slice(0,200));
+  }
+  const rows = text.trim().split('\n').filter(Boolean).map(l => { try { return JSON.parse(l); } catch(e){ return null; } }).filter(Boolean);
+  setDebug('OK · HTTP ' + res.status + ' · ' + rows.length + ' linha(s) · aba: ' + activeTab.id + ' · query: ' + query);
+  return rows;
+}
+
+async function vlStats(query){
+  const body = new URLSearchParams();
+  body.set('query', query);
+  const res = await fetch(`${API}/select/logsql/query`, {method:'POST', body});
+  const text = await res.text();
+  const lines = text.trim().split('\n').filter(Boolean).map(l=>JSON.parse(l));
+  return lines[0] ? Number(lines[0].total || 0) : 0;
+}
+
+function timeRangeVal(){ return document.getElementById('timeRange').value; }
+function freeTextVal(){ return document.getElementById('freeText').value.trim(); }
+function setHead(cols){
+  document.getElementById('tableHead').innerHTML = '<tr>' + cols.map(c=>`<th>${c}</th>`).join('') + '</tr>';
+}
+
+function toggleActionUI(show){
+  document.querySelectorAll('.action-only').forEach(el => el.style.display = show ? '' : 'none');
+}
+
+async function runNetfilterTab(){
+  const tab = activeTab;
+  const range = timeRangeVal();
+  const free = freeTextVal();
+  const actionSel = document.getElementById('actionFilter').value;
+  let base = `_time:${range} app_name:kernel`;
+  if(free) base += ` "${free.replace(/"/g,'')}"`;
+  const extract = `extract_regexp "${fwRegex()}"`;
+  const chipQ = buildChipQuery();
+  let core = `${base} | ${extract} | filter nf_action:*`;
+  if(tab.extra) core += ` | filter (${tab.extra})`;
+  if(chipQ) core += ` | filter (${chipQ})`;
+
+  let q = core;
+  if(actionSel === 'block') q += ' | filter (nf_action:~"(?i)reject|drop|banip")';
+  if(actionSel === 'allow') q += ' | filter (nf_action:~"(?i)accept|allow")';
+  q += ' | sort by (_time) desc';
+
+  setHead(['Hora','Ação','Regra/Direção','Origem','Destino','Protocolo','Interface','']);
+  toggleActionUI(true);
+  document.getElementById('lastUpdate').textContent = 'Atualizando...';
+  try{
+    const rows = await vlQuery(q, 300);
+    renderNetfilterRows(rows);
+    const total = await vlStats(`${core} | stats count() as total`);
+    const blocked = await vlStats(`${core} | filter (nf_action:~"(?i)reject|drop|banip") | stats count() as total`);
+    document.getElementById('statTotal').textContent = total;
+    document.getElementById('statBlocked').textContent = blocked;
+    document.getElementById('statAllowed').textContent = Math.max(total-blocked,0);
+  } catch(e){
+    document.getElementById('tableBody').innerHTML = `<tr><td class="empty">Erro: ${esc(e.message)}</td></tr>`;
+  }
+  document.getElementById('lastUpdate').textContent = 'Atualizado ' + new Date().toLocaleTimeString('pt-BR');
+}
+
+function renderNetfilterRows(rows){
+  const body = document.getElementById('tableBody');
+  if(!rows.length){ body.innerHTML = '<tr><td colspan="8" class="empty">Nenhum evento encontrado para os filtros atuais.</td></tr>'; return; }
+  body.innerHTML = rows.map((r,i) => {
+    const cls = classify(r.nf_action);
+    const badgeLabel = cls==='block' ? 'Bloqueado' : (cls==='allow' ? 'Permitido' : 'Outro');
+    const proto = PROTO_NAMES[r.proto] || r.proto || '—';
+    const src = r.src_ip ? `${r.src_ip}${r.spt ? ':'+r.spt:''}` : '—';
+    const dst = r.dst_ip ? `${r.dst_ip}${r.dpt ? ':'+r.dpt:''}` : '—';
+    const iface = `${r.in_if||'—'} → ${r.out_if||'—'}`;
+    const time = r._time ? new Date(r._time).toLocaleString('pt-BR') : '—';
+    return `<tr>
+      <td class="mono">${esc(time)}</td>
+      <td><span class="badge ${cls}">${badgeLabel}</span></td>
+      <td class="clickable" data-k="nf_action" data-v="${esc(r.nf_action)}">${esc(r.nf_action||'—')}</td>
+      <td class="mono clickable" data-k="src_ip" data-v="${esc(r.src_ip)}">${esc(src)}</td>
+      <td class="mono clickable" data-k="dst_ip" data-v="${esc(r.dst_ip)}">${esc(dst)}</td>
+      <td class="clickable" data-k="proto" data-v="${esc(r.proto)}">${esc(proto)}</td>
+      <td class="mono">${esc(iface)}</td>
+      <td><span class="msg-toggle" data-i="${i}">detalhes</span><div class="msg-full" id="msg-${i}" style="display:none">${esc(r._msg)}</div></td>
+    </tr>`;
+  }).join('');
+  bindRowInteractions(body);
+}
+
+async function runIpsTab(){
+  const range = timeRangeVal();
+  const free = freeTextVal();
+  const actionSel = document.getElementById('actionFilter').value;
+  let base = `_time:${range} app_name:"snort-ips"`;
+  if(free) base += ` "${free.replace(/"/g,'')}"`;
+  const chipQ = buildChipQuery();
+  let core = `${base} | unpack_json`;
+  if(chipQ) core += ` | filter (${chipQ})`;
+  let q = core;
+  if(actionSel === 'block') q += ' | filter (action:~"(?i)drop|block|reject")';
+  if(actionSel === 'allow') q += ' | filter (action:~"(?i)alert")';
+  q += ' | sort by (_time) desc';
+
+  setHead(['Hora','Ação','Regra (GID:SID)','Origem','Destino','Protocolo','Descrição','']);
+  toggleActionUI(true);
+  document.getElementById('lastUpdate').textContent = 'Atualizando...';
+  try{
+    const rows = await vlQuery(q, 300);
+    renderIpsRows(rows);
+    const total = await vlStats(`${core} | stats count() as total`);
+    const blocked = await vlStats(`${core} | filter (action:~"(?i)drop|block|reject") | stats count() as total`);
+    document.getElementById('statTotal').textContent = total;
+    document.getElementById('statBlocked').textContent = blocked;
+    document.getElementById('statAllowed').textContent = Math.max(total-blocked,0);
+  } catch(e){
+    document.getElementById('tableBody').innerHTML = `<tr><td class="empty">Erro: ${esc(e.message)}</td></tr>`;
+  }
+  document.getElementById('lastUpdate').textContent = 'Atualizado ' + new Date().toLocaleTimeString('pt-BR');
+}
+
+function renderIpsRows(rows){
+  const body = document.getElementById('tableBody');
+  if(!rows.length){ body.innerHTML = '<tr><td colspan="7" class="empty">Nenhum alerta de IPS/IDS no período. (O Snort só inspeciona tráfego roteado LAN↔WAN; ainda não passou tráfego correspondente por uma regra.)</td></tr>'; return; }
+  body.innerHTML = rows.map((r,i) => {
+    const cls = classifyIps(r.action);
+    const badgeLabel = cls==='block' ? 'Bloqueado' : 'Alerta';
+    const proto = PROTO_NAMES[r.proto] || r.proto || '—';
+    const src = r.src_addr ? `${r.src_addr}${r.src_port ? ':'+r.src_port:''}` : '—';
+    const dst = r.dst_addr ? `${r.dst_addr}${r.dst_port ? ':'+r.dst_port:''}` : '—';
+    const rule = (r.gid && r.sid) ? `${r.gid}:${r.sid}:${r.rev||0}` : '—';
+    const time = r._time ? new Date(r._time).toLocaleString('pt-BR') : '—';
+    return `<tr>
+      <td class="mono">${esc(time)}</td>
+      <td><span class="badge ${cls}">${badgeLabel}</span></td>
+      <td class="mono clickable" data-k="rule" data-v="${esc(rule)}">${esc(rule)}</td>
+      <td class="mono clickable" data-k="src_addr" data-v="${esc(r.src_addr)}">${esc(src)}</td>
+      <td class="mono clickable" data-k="dst_addr" data-v="${esc(r.dst_addr)}">${esc(dst)}</td>
+      <td class="clickable" data-k="proto" data-v="${esc(r.proto)}">${esc(proto)}</td>
+      <td>${esc(r.msg||'—')}<div><span class="msg-toggle" data-i="${i}">json bruto</span><div class="msg-full" id="msg-${i}" style="display:none">${esc(r._msg)}</div></div></td>
+    </tr>`;
+  }).join('');
+  bindRowInteractions(body);
+}
+
+async function runSimpleTab(){
+  const tab = activeTab;
+  const range = timeRangeVal();
+  const free = freeTextVal();
+  let base = `_time:${range}`;
+  if(tab.base) base += ` ${tab.base}`;
+  if(free) base += ` "${free.replace(/"/g,'')}"`;
+  const q = `${base} | sort by (_time) desc`;
+
+  setHead(['Hora','Host','Processo','Severidade','Mensagem']);
+  toggleActionUI(false);
+  document.getElementById('lastUpdate').textContent = 'Atualizando...';
+  try{
+    const rows = await vlQuery(q, 300);
+    renderSimpleRows(rows);
+    const total = await vlStats(`${base} | stats count() as total`);
+    document.getElementById('statTotal').textContent = total;
+  } catch(e){
+    document.getElementById('tableBody').innerHTML = `<tr><td class="empty">Erro: ${esc(e.message)}</td></tr>`;
+  }
+  document.getElementById('lastUpdate').textContent = 'Atualizado ' + new Date().toLocaleTimeString('pt-BR');
+}
+
+function renderSimpleRows(rows){
+  const body = document.getElementById('tableBody');
+  if(!rows.length){ body.innerHTML = '<tr><td colspan="5" class="empty">Nenhum log encontrado para esta categoria no período selecionado.</td></tr>'; return; }
+  body.innerHTML = rows.map(r => {
+    const time = r._time ? new Date(r._time).toLocaleString('pt-BR') : '—';
+    const lvl = (r.level||'info').toLowerCase();
+    return `<tr>
+      <td class="mono">${esc(time)}</td>
+      <td class="mono">${esc(r.hostname)}</td>
+      <td class="mono">${esc(r.app_name)}</td>
+      <td class="sev-${esc(lvl)}">${esc(r.level||'—')}</td>
+      <td>${esc(r._msg)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function bindRowInteractions(body){
+  body.querySelectorAll('.clickable').forEach(el => el.onclick = () => { if(el.dataset.v) addFilter(el.dataset.k, el.dataset.v); });
+  body.querySelectorAll('.msg-toggle').forEach(el => el.onclick = () => {
+    const d = document.getElementById('msg-'+el.dataset.i);
+    d.style.display = d.style.display === 'none' ? 'block' : 'none';
+  });
+}
+
+function runQuery(){
+  if(activeTab.kind === 'netfilter') return runNetfilterTab();
+  if(activeTab.kind === 'ips') return runIpsTab();
+  return runSimpleTab();
+}
+
+function renderTabsBar(){
+  const bar = document.getElementById('tabsBar');
+  bar.innerHTML = TABS.map(t => `<div class="tab${t===activeTab?' active':''}" data-id="${t.id}">${esc(t.label)}</div>`).join('');
+  bar.querySelectorAll('.tab').forEach(el => el.onclick = () => {
+    activeTab = TABS.find(t => t.id === el.dataset.id);
+    filters = {};
+    renderChips();
+    renderTabsBar();
+    runQuery();
+  });
+}
+
+document.getElementById('btnSearch').onclick = runQuery;
+document.getElementById('timeRange').onchange = runQuery;
+document.getElementById('actionFilter').onchange = runQuery;
+document.getElementById('freeText').addEventListener('keydown', e => { if(e.key==='Enter') runQuery(); });
+document.getElementById('btnClear').onclick = () => { filters={}; document.getElementById('freeText').value=''; document.getElementById('actionFilter').value=''; renderChips(); runQuery(); };
+document.getElementById('autoRefresh').onchange = setupAutoRefresh;
+
+function setupAutoRefresh(){
+  if(timer) clearInterval(timer);
+  if(document.getElementById('autoRefresh').checked){
+    timer = setInterval(runQuery, 10000);
+  }
+}
+
+renderTabsBar();
+renderChips();
+runQuery();
+setupAutoRefresh();
+</script>
+</body>
+</html>

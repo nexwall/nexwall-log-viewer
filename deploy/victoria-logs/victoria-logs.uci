@@ -1,0 +1,6 @@
+config victorialogs 'main'
+	option storage_path '/mnt/data/victoria-logs-data'
+	option retention_period '30d'
+	option http_listen_addr '0.0.0.0:9428'
+	option syslog_listen_udp '127.0.0.1:5140'
+	option syslog_listen_tcp '127.0.0.1:5140'

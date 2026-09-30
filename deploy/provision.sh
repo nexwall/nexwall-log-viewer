@@ -81,10 +81,21 @@ UCI
 /etc/init.d/firewall reload
 
 echo "== 4. DPI blocked-connection logging =="
+# Two layers, both needed:
+#  - the GLOBAL log_blocked flag logs blocked flows to /var/log/messages as
+#    prose (noisy, not what the DPI tab reads)
+#  - each RULE needs its own log='1' to get structured per-flow JSON written
+#    to /var/run/netifyd/dpi-actions-*.json every 60s - THIS is what the
+#    DPI tab's LogsQL query (app_name:"dpi-block") actually reads, via the
+#    imfile input in rsyslog/nexwall-extra.conf.
 if uci -q get dpi.config >/dev/null 2>&1; then
   uci set dpi.config.log_blocked='1'
+  for rule in $(uci show dpi 2>/dev/null | grep "=rule$" | cut -d. -f2 | cut -d= -f1); do
+    uci set "dpi.${rule}.log=1"
+  done
   uci commit dpi
   /etc/init.d/dpi restart || true
+  service netifyd reload 2>/dev/null || true
 else
   echo "dpi package/config not found - skipping (DPI tab will just be empty)"
 fi
@@ -95,6 +106,12 @@ echo "      on a box with no real attack traffic). To enable:"
 echo "      uci set snort.snort.ns_testing='1'; uci commit snort; /etc/init.d/snort restart"
 
 echo "== 6. DNS query logging (DNS Protection tab) =="
+# The tab only reads lines matching 'is NXDOMAIN' (dnsmasq's block signature
+# when a domain is redirected via adblock's 'local=/domain/' entries) - every
+# other query still gets logged too, but is filtered out client-side by the
+# LogsQL query, not by this step. If Threat Shield DNS (adblock) has no
+# active feeds, this tab will simply stay empty - that's a product-level
+# adblock state, not something this script controls.
 if uci -q get dhcp.@dnsmasq[0] >/dev/null 2>&1; then
   uci set dhcp.@dnsmasq[0].logqueries='1'
   uci commit dhcp

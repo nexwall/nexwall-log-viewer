@@ -1,47 +1,68 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Nexwall — Log Viewer</title>
+<title>Nexwall Log Viewer</title>
 <style>
 :root{
-  --blue:#1976d2; --blue-dark:#005cb2;
+  --blue:#4f46e5; --blue-dark:#4338ca;
   --red:#ef4444; --red-bg:#fef2f2; --red-text:#b91c1c;
   --green:#059669; --green-bg:#ecfdf5; --green-text:#047857;
   --amber:#d97706; --amber-bg:#fffbeb; --amber-text:#92400e;
-  --gray-50:#fafafa; --gray-100:#f3f3f3; --gray-200:#e5e7eb;
-  --gray-500:#6a7282; --gray-700:#364153; --gray-900:#101828;
-  --border:#e5e7eb;
+  --gray-50:#fafafa; --gray-100:#f3f4f6; --gray-200:#e5e7eb;
+  --gray-500:#6b7280; --gray-700:#374151; --gray-900:#111827;
+  --border:#e5e7eb; --card:#fff; --bg:#fafafa;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --red-bg:#3b1414; --red-text:#fca5a5; --green-bg:#0f2a20; --green-text:#6ee7b7; --amber-bg:#33260a; --amber-text:#fcd34d;
+    --gray-50:#111827; --gray-100:#1f2937; --gray-200:#374151; --gray-500:#9ca3af; --gray-700:#d1d5db; --gray-900:#f3f4f6;
+    --border:#374151; --card:#1f2937; --bg:#111827; --blue-dark:#a5b4fc; --blue:#818cf8;
+  }
 }
 *{box-sizing:border-box}
-body{margin:0;font-family:"Inter Variable",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--gray-50);color:var(--gray-900);font-size:13px}
-header{background:#fff;border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;justify-content:space-between}
-header h1{font-size:16px;margin:0;font-weight:600;color:var(--gray-900)}
+body{margin:0;font-family:"Inter Variable",Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--gray-900);font-size:13px}
+header{background:var(--card);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+header h1{font-size:16px;margin:0;font-weight:600;color:var(--gray-900);letter-spacing:.02em}
 header h1 span{color:var(--blue-dark)}
-.tabs{display:flex;gap:2px;padding:0 20px;background:#fff;border-bottom:1px solid var(--border);overflow-x:auto}
+header .right{display:flex;gap:12px;align-items:center;font-size:11px;color:var(--gray-500)}
+header select{padding:4px 6px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--gray-700);font-size:12px}
+.tabs{display:flex;gap:2px;padding:0 20px;background:var(--card);border-bottom:1px solid var(--border);overflow-x:auto}
 .tab{padding:10px 14px;cursor:pointer;font-weight:500;color:var(--gray-500);border-bottom:2px solid transparent;font-size:12.5px;white-space:nowrap}
 .tab.active{color:var(--blue-dark);border-bottom-color:var(--blue-dark)}
-.toolbar{display:flex;gap:10px;align-items:center;padding:12px 20px;background:#fff;border-bottom:1px solid var(--border);flex-wrap:wrap}
-.toolbar input[type=text]{flex:1;min-width:220px;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px}
-.toolbar select,.toolbar button{padding:7px 10px;border:1px solid var(--border);border-radius:6px;background:#fff;font-size:13px;cursor:pointer;color:var(--gray-700)}
-.toolbar button.primary{background:var(--blue-dark);color:#fff;border-color:var(--blue-dark)}
-.toolbar label{display:flex;align-items:center;gap:5px;color:var(--gray-700);font-size:13px}
-.chips{display:flex;gap:6px;flex-wrap:wrap;padding:0 20px 10px;background:#fff}
+.tab.sep{margin-left:18px;border-left:1px solid var(--border)}
+.toolbar{display:flex;gap:10px;align-items:center;padding:12px 20px;background:var(--card);border-bottom:1px solid var(--border);flex-wrap:wrap}
+.toolbar input[type=text],.panel input[type=text],.panel input[type=number]{padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:var(--card);color:var(--gray-900)}
+.toolbar input[type=text]{flex:1;min-width:220px}
+.toolbar select,.toolbar button,.panel select,.panel button{padding:7px 10px;border:1px solid var(--border);border-radius:6px;background:var(--card);font-size:13px;cursor:pointer;color:var(--gray-700)}
+button.primary{background:var(--blue);color:#fff!important;border-color:var(--blue)!important}
+button.danger{background:var(--red);color:#fff!important;border-color:var(--red)!important}
+button:disabled{opacity:.5;cursor:not-allowed}
+.toolbar label,.panel label{display:flex;align-items:center;gap:5px;color:var(--gray-700);font-size:13px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;padding:0 20px;background:var(--card)}
+.chips:not(:empty){padding-bottom:10px}
 .chip{background:var(--gray-100);border:1px solid var(--border);border-radius:14px;padding:4px 10px;font-size:12px;display:flex;gap:6px;align-items:center;color:var(--gray-700)}
 .chip b{color:var(--gray-900)}
 .chip .x{cursor:pointer;color:var(--gray-500);font-weight:700}
 .chip .x:hover{color:var(--red)}
-#debug{margin:0 20px 10px;padding:8px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;font-size:11px;color:#92400e;font-family:monospace;white-space:pre-wrap;word-break:break-all}
-.stats{display:flex;gap:12px;padding:12px 20px;background:#fff;border-bottom:1px solid var(--border)}
+/* troubleshooting output: hidden unless the page is opened with ?debug=1, or a request fails */
+#debug{display:none;margin:0 20px 10px;padding:8px 12px;background:var(--amber-bg);border:1px solid var(--amber);border-radius:6px;font-size:11px;color:var(--amber-text);font-family:monospace;white-space:pre-wrap;word-break:break-all}
+#debug.show{display:block}
+.stats{display:flex;gap:12px;padding:12px 20px;background:var(--card);border-bottom:1px solid var(--border)}
 .stat{flex:1;border:1px solid var(--border);border-radius:8px;padding:10px 14px}
 .stat .n{font-size:20px;font-weight:700}
 .stat .l{font-size:11px;color:var(--gray-500);text-transform:uppercase;letter-spacing:.03em}
-.stat.total .n{color:var(--gray-900)}
 .stat.blocked .n{color:var(--red-text)}
 .stat.allowed .n{color:var(--green-text)}
 main{padding:0 20px 30px}
-table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-top:12px}
+.panel{background:var(--card);border-bottom:1px solid var(--border);padding:14px 20px}
+.panel .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.panel .field{display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--gray-500)}
+.panel .field input,.panel .field select{width:150px}
+.panel .desc{color:var(--gray-500);font-size:12px;margin:0 0 10px}
+.panel .status{margin-left:auto;font-size:12px;color:var(--gray-500)}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-top:12px}
 thead th{text-align:left;background:var(--gray-100);color:var(--gray-700);font-size:11px;text-transform:uppercase;letter-spacing:.03em;padding:9px 10px;border-bottom:1px solid var(--border)}
 tbody td{padding:8px 10px;border-bottom:1px solid var(--gray-100);font-size:12.5px;vertical-align:top}
 tbody tr:hover{background:var(--gray-50)}
@@ -52,102 +73,347 @@ tbody tr:hover{background:var(--gray-50)}
 .clickable{cursor:pointer;color:var(--blue-dark)}
 .clickable:hover{text-decoration:underline}
 .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
-.msg-toggle{cursor:pointer;color:var(--gray-500);font-size:11px}
+.msg-toggle{cursor:pointer;color:var(--gray-500);font-size:11px;margin-right:8px}
 .msg-full{white-space:pre-wrap;word-break:break-all;color:var(--gray-500);margin-top:4px;font-size:11px}
+.reason{color:var(--gray-700)}
 .empty{padding:40px;text-align:center;color:var(--gray-500)}
 .sev-emerg,.sev-alert,.sev-crit,.sev-err{color:var(--red-text);font-weight:600}
 .sev-warning{color:var(--amber-text);font-weight:600}
 .sev-notice,.sev-info,.sev-debug{color:var(--gray-700)}
+.path{margin:6px 0 0 0;padding:6px 8px;background:var(--gray-100);border-radius:6px;font-size:11px;font-family:ui-monospace,monospace;color:var(--gray-700)}
+.path div{white-space:pre-wrap}
 footer.note{padding:8px 20px;color:var(--gray-500);font-size:11px}
 </style>
 </head>
 <body>
 <header>
-  <h1>Nexwall <span>Log Viewer</span></h1>
-  <div style="font-size:11px;color:var(--gray-500)" id="lastUpdate">—</div>
+  <h1>NEXWALL <span data-i18n="app.title">Log Viewer</span></h1>
+  <div class="right">
+    <span id="lastUpdate">—</span>
+    <select id="langSel" title="Language" aria-label="Language">
+      <option value="en">English</option>
+      <option value="es">Español</option>
+      <option value="pt-BR">Português (BR)</option>
+    </select>
+  </div>
 </header>
 <div class="tabs" id="tabsBar"></div>
 
-<div class="toolbar">
-  <input type="text" id="freeText" placeholder="Buscar (IP, texto livre)...">
+<!-- search tabs -->
+<div class="toolbar" id="searchBar">
+  <input type="text" id="freeText" data-i18n-ph="ui.search_ph">
   <select id="timeRange">
-    <option value="15m">Últimos 15 min</option>
-    <option value="1h" selected>Última 1 hora</option>
-    <option value="6h">Últimas 6 horas</option>
-    <option value="24h">Últimas 24 horas</option>
-    <option value="7d">Últimos 7 dias</option>
+    <option value="15m" data-i18n="range.15m"></option>
+    <option value="1h" selected data-i18n="range.1h"></option>
+    <option value="6h" data-i18n="range.6h"></option>
+    <option value="24h" data-i18n="range.24h"></option>
+    <option value="7d" data-i18n="range.7d"></option>
   </select>
   <select id="actionFilter" class="action-only">
-    <option value="">Todas as ações</option>
-    <option value="block">Somente bloqueados</option>
-    <option value="allow">Somente permitidos</option>
+    <option value="" data-i18n="ui.all_actions"></option>
+    <option value="block" data-i18n="ui.only_blocked"></option>
+    <option value="allow" data-i18n="ui.only_allowed"></option>
   </select>
-  <label><input type="checkbox" id="autoRefresh" checked> Auto-refresh (10s)</label>
-  <button class="primary" id="btnSearch">Buscar</button>
-  <button id="btnClear">Limpar filtros</button>
+  <label><input type="checkbox" id="autoRefresh" checked> <span data-i18n="ui.auto_refresh"></span></label>
+  <button class="primary" id="btnSearch" data-i18n="ui.search"></button>
+  <button id="btnClear" data-i18n="ui.clear"></button>
+  <button id="btnExport" data-i18n="ui.export"></button>
 </div>
 <div class="chips" id="chips"></div>
 <div id="debug"></div>
 <div class="stats" id="statsBar">
-  <div class="stat total"><div class="n" id="statTotal">—</div><div class="l">Eventos no período</div></div>
-  <div class="stat blocked action-only"><div class="n" id="statBlocked">—</div><div class="l">Bloqueados</div></div>
-  <div class="stat allowed action-only"><div class="n" id="statAllowed">—</div><div class="l">Permitidos</div></div>
+  <div class="stat total"><div class="n" id="statTotal">—</div><div class="l" data-i18n="ui.events"></div></div>
+  <div class="stat blocked action-only"><div class="n" id="statBlocked">—</div><div class="l" data-i18n="ui.blocked"></div></div>
+  <div class="stat allowed action-only"><div class="n" id="statAllowed">—</div><div class="l" data-i18n="ui.allowed"></div></div>
+</div>
+
+<!-- live trace tabs -->
+<div class="panel" id="tracePanel" style="display:none">
+  <p class="desc" id="traceDesc"></p>
+  <div class="row">
+    <div class="field"><span data-i18n="trace.src_host"></span><input type="text" id="tSrcHost" placeholder="192.168.1.10"></div>
+    <div class="field"><span data-i18n="trace.host"></span><input type="text" id="tHost" placeholder="8.8.8.8"></div>
+    <div class="field"><span data-i18n="trace.src_net"></span><input type="text" id="tSrcNet" placeholder="192.168.1.0/24"></div>
+    <div class="field"><span data-i18n="trace.net"></span><input type="text" id="tNet" placeholder="10.0.0.0/8"></div>
+    <div class="field"><span data-i18n="trace.src_port"></span><input type="number" id="tSrcPort" min="1" max="65535" style="width:90px"></div>
+    <div class="field"><span data-i18n="trace.port"></span><input type="number" id="tPort" min="1" max="65535" style="width:90px"></div>
+    <div class="field"><span data-i18n="trace.proto"></span>
+      <select id="tProto" style="width:100px"><option value=""></option><option>tcp</option><option>udp</option><option>icmp</option></select></div>
+    <div class="field"><span data-i18n="trace.duration"></span>
+      <select id="tSecs" style="width:100px"><option value="15">15 s</option><option value="30" selected>30 s</option><option value="60">60 s</option><option value="120">120 s</option></select></div>
+    <label><input type="checkbox" id="tBoth" checked> <span data-i18n="trace.both"></span></label>
+    <button class="primary" id="tStart" data-i18n="trace.start"></button>
+    <button class="danger" id="tStop" data-i18n="trace.stop" disabled></button>
+    <span class="status" id="tStatus"></span>
+  </div>
 </div>
 
 <main>
   <table id="dataTable">
     <thead id="tableHead"></thead>
-    <tbody id="tableBody"><tr><td class="empty">Carregando...</td></tr></tbody>
+    <tbody id="tableBody"><tr><td class="empty" data-i18n="ui.loading"></td></tr></tbody>
   </table>
 </main>
-<footer class="note" id="footerNote">Fonte: VictoriaLogs</footer>
+<footer class="note" id="footerNote"></footer>
 
 <script>
-const API = '/logs-viewer/api';
+const API = '/api';
 let filters = {};
 let timer = null;
+let currentRows = [];   // last rendered table (array of arrays of strings) - what "Export CSV" writes
 
+/* ------------------------------------------------------------------ i18n */
+const I18N = {
+en: {
+ 'app.title':'Log Viewer',
+ 'tab.fw':'Firewall traffic','tab.ipb':'IP & Geo Blocking','tab.ips':'IPS / IDS','tab.dpi':'DPI','tab.dns':'DNS Filtering','tab.vpn':'VPN',
+ 'tab.ha':'High Availability','tab.rproxy':'Reverse Proxy','tab.auth':'Authentication','tab.admin':'Admin activity','tab.sys':'System logs',
+ 'tab.fwtrace':'Live rule trace','tab.drppkt':'Packet path',
+ 'range.15m':'Last 15 minutes','range.1h':'Last hour','range.6h':'Last 6 hours','range.24h':'Last 24 hours','range.7d':'Last 7 days',
+ 'ui.search_ph':'Search (IP, free text)...','ui.all_actions':'All actions','ui.only_blocked':'Blocked only','ui.only_allowed':'Allowed only',
+ 'ui.auto_refresh':'Auto-refresh (10s)','ui.search':'Search','ui.clear':'Clear filters','ui.export':'Export CSV',
+ 'ui.updating':'Updating...','ui.updated':'Updated','ui.loading':'Loading...','ui.events':'Events in period','ui.blocked':'Blocked','ui.allowed':'Allowed',
+ 'ui.error':'Error','ui.raw':'raw','ui.details':'details','ui.trace_this':'trace','ui.source_note':'Source: VictoriaLogs on this firewall',
+ 'ui.session_expired':'Session expired or not signed in. Open the Log Viewer again from Logs in the Nexwall interface.',
+ 'ui.none':'No events found for the current filters.',
+ 'col.time':'Time','col.action':'Action','col.reason':'Reason','col.source':'Source','col.destination':'Destination','col.protocol':'Protocol','col.interface':'Interface',
+ 'col.host':'Host','col.process':'Process','col.severity':'Severity','col.message':'Message','col.rule_gidsid':'Rule (GID:SID)','col.description':'Description',
+ 'col.user':'User','col.result':'Result','col.via':'Via','col.client':'Client','col.request':'Request','col.status':'Status','col.bytes':'Bytes','col.area':'Area','col.what':'Action','col.rule':'Rule','col.nat':'NAT',
+ 'badge.blocked':'Blocked','badge.allowed':'Allowed','badge.other':'Other','badge.alert':'Alert','badge.ok':'Success','badge.failed':'Failed',
+ 'dir.in':'inbound','dir.out':'outbound','dir.forward':'forwarded','dir.inbound':'inbound','dir.outbound':'outbound',
+ 'reason.dpi':'DPI: application or protocol blocked by policy',
+ 'reason.banip':'IP & Geo Blocking: {dir} traffic matched list {list}',
+ 'reason.zone':'Zone policy: zone {zone} {action} {dir} traffic (no rule allowed it)',
+ 'act.reject':'rejects','act.drop':'drops','act.accept':'accepts',
+ 'reason.invalid':'Invalid connection state',
+ 'reason.rule':'Firewall rule: {name}',
+ 'reason.zone_policy':'Zone policy: {name}',
+ 'reason.established':'Established or related connection',
+ 'reason.default':'Default policy',
+ 'reason.ips':'IPS','reason.dns':'DNS Filtering',
+ 'empty.ips':'No IPS/IDS alerts in this period. (Snort only inspects routed LAN↔WAN traffic.)',
+ 'empty.dns':'No blocked domains in this period. (Ordinary DNS queries are not listed here on purpose; see System logs for raw DNS traffic.)',
+ 'empty.vpn':'No VPN connection or authentication events in this period. (Management/keepalive chatter is filtered out on purpose; see System logs for the raw service log.)',
+ 'empty.ha':'No High Availability events in this period. (HA logs appear once a primary/backup pair is configured.)',
+ 'empty.rproxy':'No reverse proxy requests in this period. (Access is logged for published domains.)',
+ 'empty.auth':'No login events in this period.',
+ 'empty.admin':'No configuration changes in this period.',
+ 'empty.generic':'No logs found for this category in the selected period.',
+ 'trace.host':'To host','trace.src_host':'From host','trace.net':'To network','trace.src_net':'From network','trace.port':'To port','trace.src_port':'From port','trace.proto':'Protocol',
+ 'trace.duration':'Duration','trace.both':'Both directions','trace.start':'Start trace','trace.stop':'Stop','trace.running':'Tracing… {n} flow(s)','trace.finished':'Finished · {n} flow(s)',
+ 'trace.need_filter':'Give at least one of: host, network, port or protocol.','trace.busy':'Another trace is already running on this firewall.','trace.err':'Could not start the trace',
+ 'trace.none':'Waiting for traffic that matches the filter… Generate some (open the site, ping, …).',
+ 'trace.desc_fw':'Follows routed and NAT traffic in real time and shows, for each flow, the decision, the exact rule that made it and why (firewall rule, zone policy, DPI, IP & Geo Blocking). It only observes; nothing is changed.',
+ 'trace.desc_dr':'Like Live rule trace, plus traffic to the firewall itself, and it lists every rule the packet crossed. It only observes; nothing is changed.',
+ 'trace.path':'rule path','col.decision':'Decision'
+},
+es: {
+ 'app.title':'Visor de registros',
+ 'tab.fw':'Tráfico del firewall','tab.ipb':'Bloqueo de IP y geografía','tab.ips':'IPS / IDS','tab.dpi':'DPI','tab.dns':'Filtrado DNS','tab.vpn':'VPN',
+ 'tab.ha':'Alta disponibilidad','tab.rproxy':'Proxy inverso','tab.auth':'Autenticación','tab.admin':'Actividad de administración','tab.sys':'Registros del sistema',
+ 'tab.fwtrace':'Traza de reglas en vivo','tab.drppkt':'Ruta del paquete',
+ 'range.15m':'Últimos 15 minutos','range.1h':'Última hora','range.6h':'Últimas 6 horas','range.24h':'Últimas 24 horas','range.7d':'Últimos 7 días',
+ 'ui.search_ph':'Buscar (IP, texto libre)...','ui.all_actions':'Todas las acciones','ui.only_blocked':'Solo bloqueados','ui.only_allowed':'Solo permitidos',
+ 'ui.auto_refresh':'Actualizar solo (10s)','ui.search':'Buscar','ui.clear':'Limpiar filtros','ui.export':'Exportar CSV',
+ 'ui.updating':'Actualizando...','ui.updated':'Actualizado','ui.loading':'Cargando...','ui.events':'Eventos en el período','ui.blocked':'Bloqueados','ui.allowed':'Permitidos',
+ 'ui.error':'Error','ui.raw':'bruto','ui.details':'detalles','ui.trace_this':'trazar','ui.source_note':'Fuente: VictoriaLogs en este firewall',
+ 'ui.session_expired':'Sesión caducada o sin iniciar. Vuelva a abrir el visor desde Registros en la interfaz de Nexwall.',
+ 'ui.none':'No se encontraron eventos con los filtros actuales.',
+ 'col.time':'Hora','col.action':'Acción','col.reason':'Motivo','col.source':'Origen','col.destination':'Destino','col.protocol':'Protocolo','col.interface':'Interfaz',
+ 'col.host':'Host','col.process':'Proceso','col.severity':'Severidad','col.message':'Mensaje','col.rule_gidsid':'Regla (GID:SID)','col.description':'Descripción',
+ 'col.user':'Usuario','col.result':'Resultado','col.via':'Vía','col.client':'Cliente','col.request':'Solicitud','col.status':'Estado','col.bytes':'Bytes','col.area':'Área','col.what':'Acción','col.rule':'Regla','col.nat':'NAT',
+ 'badge.blocked':'Bloqueado','badge.allowed':'Permitido','badge.other':'Otro','badge.alert':'Alerta','badge.ok':'Correcto','badge.failed':'Fallido',
+ 'dir.in':'entrante','dir.out':'saliente','dir.forward':'reenviado','dir.inbound':'entrante','dir.outbound':'saliente',
+ 'reason.dpi':'DPI: aplicación o protocolo bloqueado por política',
+ 'reason.banip':'Bloqueo de IP y geografía: tráfico {dir} coincide con la lista {list}',
+ 'reason.zone':'Política de zona: la zona {zone} {action} tráfico {dir} (ninguna regla lo permitió)',
+ 'act.reject':'rechaza','act.drop':'descarta','act.accept':'acepta',
+ 'reason.invalid':'Estado de conexión no válido',
+ 'reason.rule':'Regla de firewall: {name}',
+ 'reason.zone_policy':'Política de zona: {name}',
+ 'reason.established':'Conexión establecida o relacionada',
+ 'reason.default':'Política predeterminada',
+ 'reason.ips':'IPS','reason.dns':'Filtrado DNS',
+ 'empty.ips':'Sin alertas de IPS/IDS en este período. (Snort solo inspecciona tráfico enrutado LAN↔WAN.)',
+ 'empty.dns':'Sin dominios bloqueados en este período. (Las consultas DNS normales no se listan aquí a propósito; vea Registros del sistema para el tráfico DNS bruto.)',
+ 'empty.vpn':'Sin eventos de conexión o autenticación VPN en este período. (El ruido de gestión/keepalive se filtra a propósito; vea Registros del sistema para el registro bruto del servicio.)',
+ 'empty.ha':'Sin eventos de alta disponibilidad en este período. (Los registros de HA aparecen cuando hay un par primario/respaldo configurado.)',
+ 'empty.rproxy':'Sin solicitudes al proxy inverso en este período. (Se registra el acceso a los dominios publicados.)',
+ 'empty.auth':'Sin eventos de inicio de sesión en este período.',
+ 'empty.admin':'Sin cambios de configuración en este período.',
+ 'empty.generic':'No hay registros de esta categoría en el período seleccionado.',
+ 'trace.host':'Al host','trace.src_host':'Desde el host','trace.net':'A la red','trace.src_net':'Desde la red','trace.port':'Al puerto','trace.src_port':'Desde el puerto','trace.proto':'Protocolo',
+ 'trace.duration':'Duración','trace.both':'Ambos sentidos','trace.start':'Iniciar traza','trace.stop':'Detener','trace.running':'Trazando… {n} flujo(s)','trace.finished':'Terminado · {n} flujo(s)',
+ 'trace.need_filter':'Indique al menos uno: host, red, puerto o protocolo.','trace.busy':'Ya hay otra traza en curso en este firewall.','trace.err':'No se pudo iniciar la traza',
+ 'trace.none':'Esperando tráfico que coincida con el filtro… Genere tráfico (abra el sitio, ping, …).',
+ 'trace.desc_fw':'Sigue en tiempo real el tráfico enrutado y con NAT y muestra, por flujo, la decisión, la regla exacta que la tomó y por qué (regla de firewall, política de zona, DPI, bloqueo de IP y geografía). Solo observa; no cambia nada.',
+ 'trace.desc_dr':'Como la traza de reglas en vivo, más el tráfico hacia el propio firewall, y lista todas las reglas que cruzó el paquete. Solo observa; no cambia nada.',
+ 'trace.path':'ruta de reglas','col.decision':'Decisión'
+},
+'pt-BR': {
+ 'app.title':'Visualizador de logs',
+ 'tab.fw':'Tráfego do firewall','tab.ipb':'Bloqueio de IP e geografia','tab.ips':'IPS / IDS','tab.dpi':'DPI','tab.dns':'Filtro de DNS','tab.vpn':'VPN',
+ 'tab.ha':'Alta disponibilidade','tab.rproxy':'Proxy reverso','tab.auth':'Autenticação','tab.admin':'Atividade administrativa','tab.sys':'Logs do sistema',
+ 'tab.fwtrace':'Rastreio de regras ao vivo','tab.drppkt':'Caminho do pacote',
+ 'range.15m':'Últimos 15 minutos','range.1h':'Última hora','range.6h':'Últimas 6 horas','range.24h':'Últimas 24 horas','range.7d':'Últimos 7 dias',
+ 'ui.search_ph':'Buscar (IP, texto livre)...','ui.all_actions':'Todas as ações','ui.only_blocked':'Somente bloqueados','ui.only_allowed':'Somente permitidos',
+ 'ui.auto_refresh':'Atualizar sozinho (10s)','ui.search':'Buscar','ui.clear':'Limpar filtros','ui.export':'Exportar CSV',
+ 'ui.updating':'Atualizando...','ui.updated':'Atualizado','ui.loading':'Carregando...','ui.events':'Eventos no período','ui.blocked':'Bloqueados','ui.allowed':'Permitidos',
+ 'ui.error':'Erro','ui.raw':'bruto','ui.details':'detalhes','ui.trace_this':'rastrear','ui.source_note':'Fonte: VictoriaLogs neste firewall',
+ 'ui.session_expired':'Sessão expirada ou sem login. Abra o visualizador novamente em Logs na interface do Nexwall.',
+ 'ui.none':'Nenhum evento encontrado para os filtros atuais.',
+ 'col.time':'Hora','col.action':'Ação','col.reason':'Motivo','col.source':'Origem','col.destination':'Destino','col.protocol':'Protocolo','col.interface':'Interface',
+ 'col.host':'Host','col.process':'Processo','col.severity':'Severidade','col.message':'Mensagem','col.rule_gidsid':'Regra (GID:SID)','col.description':'Descrição',
+ 'col.user':'Usuário','col.result':'Resultado','col.via':'Via','col.client':'Cliente','col.request':'Requisição','col.status':'Status','col.bytes':'Bytes','col.area':'Área','col.what':'Ação','col.rule':'Regra','col.nat':'NAT',
+ 'badge.blocked':'Bloqueado','badge.allowed':'Permitido','badge.other':'Outro','badge.alert':'Alerta','badge.ok':'Sucesso','badge.failed':'Falha',
+ 'dir.in':'de entrada','dir.out':'de saída','dir.forward':'encaminhado','dir.inbound':'de entrada','dir.outbound':'de saída',
+ 'reason.dpi':'DPI: aplicação ou protocolo bloqueado por política',
+ 'reason.banip':'Bloqueio de IP e geografia: tráfego {dir} corresponde à lista {list}',
+ 'reason.zone':'Política da zona: a zona {zone} {action} tráfego {dir} (nenhuma regra o permitiu)',
+ 'act.reject':'rejeita','act.drop':'descarta','act.accept':'aceita',
+ 'reason.invalid':'Estado de conexão inválido',
+ 'reason.rule':'Regra de firewall: {name}',
+ 'reason.zone_policy':'Política da zona: {name}',
+ 'reason.established':'Conexão estabelecida ou relacionada',
+ 'reason.default':'Política padrão',
+ 'reason.ips':'IPS','reason.dns':'Filtro de DNS',
+ 'empty.ips':'Nenhum alerta de IPS/IDS no período. (O Snort só inspeciona tráfego roteado LAN↔WAN.)',
+ 'empty.dns':'Nenhum domínio bloqueado no período. (Consultas DNS comuns não aparecem aqui de propósito; veja Logs do sistema para o tráfego DNS bruto.)',
+ 'empty.vpn':'Nenhum evento de conexão/autenticação de VPN no período. (Mensagens de gerência/keepalive são filtradas de propósito; veja Logs do sistema para o log bruto do serviço.)',
+ 'empty.ha':'Nenhum evento de alta disponibilidade no período. (Os logs de HA aparecem quando há um par primário/backup configurado.)',
+ 'empty.rproxy':'Nenhuma requisição ao proxy reverso no período. (O acesso é registrado para os domínios publicados.)',
+ 'empty.auth':'Nenhum evento de login no período.',
+ 'empty.admin':'Nenhuma alteração de configuração no período.',
+ 'empty.generic':'Nenhum log encontrado para esta categoria no período selecionado.',
+ 'trace.host':'Para o host','trace.src_host':'Do host','trace.net':'Para a rede','trace.src_net':'Da rede','trace.port':'Para a porta','trace.src_port':'Da porta','trace.proto':'Protocolo',
+ 'trace.duration':'Duração','trace.both':'Ambos os sentidos','trace.start':'Iniciar rastreio','trace.stop':'Parar','trace.running':'Rastreando… {n} fluxo(s)','trace.finished':'Concluído · {n} fluxo(s)',
+ 'trace.need_filter':'Informe ao menos um: host, rede, porta ou protocolo.','trace.busy':'Já há outro rastreio em andamento neste firewall.','trace.err':'Não foi possível iniciar o rastreio',
+ 'trace.none':'Aguardando tráfego que corresponda ao filtro… Gere tráfego (abra o site, ping, …).',
+ 'trace.desc_fw':'Acompanha em tempo real o tráfego roteado e com NAT e mostra, por fluxo, a decisão, a regra exata que a tomou e o motivo (regra de firewall, política da zona, DPI, bloqueio de IP e geografia). Apenas observa; nada é alterado.',
+ 'trace.desc_dr':'Como o rastreio de regras ao vivo, mais o tráfego para o próprio firewall, e lista todas as regras que o pacote atravessou. Apenas observa; nada é alterado.',
+ 'trace.path':'caminho das regras','col.decision':'Decisão'
+}
+};
+
+const QS = new URLSearchParams(location.search);
+const DEBUG = QS.get('debug') === '1';
+const LOCALES = {en:'en-US', es:'es-ES', 'pt-BR':'pt-BR'};
+
+function pickLang(){
+  const want = QS.get('lang') || sessionStorage.getItem('nx_logviewer_lang') || navigator.language || 'en';
+  if(/^pt/i.test(want)) return 'pt-BR';
+  if(/^es/i.test(want)) return 'es';
+  return 'en';
+}
+let LANG = pickLang();
+function t(key, vars){
+  let s = (I18N[LANG] && I18N[LANG][key]) || I18N.en[key] || key;
+  if(vars) for(const k in vars) s = s.split('{'+k+'}').join(vars[k]);
+  return s;
+}
+function applyStaticI18n(){
+  document.documentElement.lang = LANG;
+  document.querySelectorAll('[data-i18n]').forEach(el => el.textContent = t(el.dataset.i18n));
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => el.placeholder = t(el.dataset.i18nPh));
+  document.getElementById('footerNote').textContent = t('ui.source_note');
+  document.getElementById('langSel').value = LANG;
+}
+function fmtDate(v){ return v ? new Date(v).toLocaleString(LOCALES[LANG]) : '—'; }
+
+/* --------------------------------------------------------------- session */
+// The main interface hands its session token over once, as ?token=..., when it opens this page.
+// It is kept for the life of this tab only and removed from the address bar immediately.
+(function(){
+  const urlToken = QS.get('token');
+  if(urlToken) sessionStorage.setItem('nx_logviewer_token', urlToken);
+  if(QS.get('lang')) sessionStorage.setItem('nx_logviewer_lang', LANG);
+  if(urlToken || QS.get('lang')){
+    QS.delete('token'); QS.delete('lang');
+    history.replaceState({}, '', location.pathname + (QS.toString() ? '?' + QS.toString() : ''));
+  }
+})();
+function authHeaders(extra){
+  const tok = sessionStorage.getItem('nx_logviewer_token');
+  return Object.assign(tok ? {'Authorization':'Bearer ' + tok} : {}, extra || {});
+}
+
+/* ------------------------------------------------------------------ tabs */
 const PROTO_NAMES = {'1':'ICMP','2':'IGMP','6':'TCP','17':'UDP','41':'IPv6','47':'GRE','50':'ESP','51':'AH','58':'ICMPv6','132':'SCTP'};
-
-// Each tab describes how to build its LogsQL query and how to render rows.
-// kind: 'netfilter' -> kernel firewall lines, fields extracted via extract_regexp
-//       'ips'        -> Snort JSON alerts (imfile-tailed), fields via unpack_json
-//       'simple'     -> plain syslog lines (Time/App/Severity/Message)
+// kind: netfilter | ips | simple | nginx | auth | admin | trace
+// Every module tab shows only the DECISIONS of that service (block/allow/login/change), never its
+// startup or debug chatter; the unfiltered stream is always in "System logs".
 const TABS = [
-  { id:'fw',     label:'Tráfego de Firewall',      kind:'netfilter', extra:'' },
-  { id:'threat', label:'Threat Shield / GeoIP',    kind:'netfilter', extra:'nf_action:~"(?i)banip"' },
-  { id:'ips',    label:'IPS / IDS',                kind:'ips' },
-  { id:'dpi',    label:'DPI',                      kind:'simple', base:'app_name:netifyd' },
-  { id:'dns',    label:'Proteção DNS',             kind:'simple', base:'app_name:dnsmasq' },
-  { id:'vpn',    label:'VPN',                      kind:'simple', base:'(app_name:openvpn OR app_name:ipsec)' },
-  { id:'sys',    label:'Logs do Sistema',          kind:'simple', base:'' },
+  {id:'fw',     kind:'netfilter', extra:''},
+  {id:'ipb',    kind:'netfilter', extra:'nf_action:~"(?i)banip"'},
+  {id:'ips',    kind:'ips'},
+  {id:'dpi',    kind:'netfilter', extra:'nf_action:~"(?i)^dpi"'},
+  {id:'dns',    kind:'simple', base:'app_name:dnsmasq "is NXDOMAIN"'},
+  {id:'vpn',    kind:'simple', base:'(app_name:~"(?i)^openvpn" OR app_name:ipsec) ("VERIFY" OR "AUTH_FAILED" OR "Peer Connection Initiated" OR "TLS Error" OR "authentication of" OR "established successfully" OR "giving up after" OR "deleting IKE_SA" OR "CHILD_SA")'},
+  {id:'ha',     kind:'simple', base:'(app_name:~"(?i)keepalived" OR app_name:~"(?i)conntrackd" OR app_name:~"(?i)ns-ha")'},
+  {id:'rproxy', kind:'nginx'},
+  {id:'auth',   kind:'auth'},
+  {id:'admin',  kind:'admin'},
+  {id:'sys',    kind:'simple', base:''},
+  {id:'fwtrace',kind:'trace', tool:'fwtrace', sep:true},
+  {id:'drppkt', kind:'trace', tool:'drppkt'},
 ];
 let activeTab = TABS[0];
+function tabLabel(tab){ return t('tab.' + tab.id); }
 
+/* --------------------------------------------------------------- helpers */
 function esc(s){ return (s===undefined||s===null) ? '' : String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function q(s){ return String(s).replace(/"/g,''); }   // safe inside a LogsQL "..." literal
 
 function fwRegex(){
   return '(?P<nf_action>[^:]+): IN=(?P<in_if>[^ ]*) OUT=(?P<out_if>[^ ]*).*?SRC=(?P<src_ip>[^ ]+) DST=(?P<dst_ip>[^ ]+).*?PROTO=(?P<proto>[^ ]+)(?: SPT=(?P<spt>[0-9]+) DPT=(?P<dpt>[0-9]+))?';
 }
+function cleanAction(a){ return String(a||'').replace(/^\s*\[[^\]]*\]\s*/, '').trim(); }   // some kernels prefix "[12345.678]"
 
-function classify(nfAction){
-  const a = (nfAction||'').toLowerCase();
-  if(a.includes('reject') || a.includes('drop') || a.includes('banip')) return 'block';
-  if(a.includes('accept') || a.includes('allow')) return 'allow';
+function classify(action){
+  const a = cleanAction(action).toLowerCase();
+  if(/reject|drop|banip|dpi|block|deny/.test(a)) return 'block';
+  if(/accept|allow/.test(a)) return 'allow';
   return 'other';
 }
-
 function classifyIps(action){
   const a = (action||'').toLowerCase();
-  if(a.includes('drop') || a.includes('block') || a.includes('reject')) return 'block';
-  if(a.includes('alert')) return 'other';
-  return 'other';
+  return /drop|block|reject/.test(a) ? 'block' : 'other';
+}
+function badgeLabel(cls){ return cls==='block' ? t('badge.blocked') : (cls==='allow' ? t('badge.allowed') : t('badge.other')); }
+
+// Turns the log prefix the firewall writes ("reject wan in", "DPI block", "banIP/inbound/drop/<list>",
+// or the NAME of a rule that has logging on) into a plain-language reason.
+function describeReason(prefix){
+  const s = cleanAction(prefix);
+  let m;
+  if(/^dpi\b/i.test(s)) return t('reason.dpi');
+  if((m = s.match(/^banIP\/(inbound|outbound)\/(?:drop|reject)\/(.+)$/i))) return t('reason.banip', {dir:t('dir.'+m[1].toLowerCase()), list:m[2]});
+  if(/invalid ct state/i.test(s)) return t('reason.invalid');
+  if((m = s.match(/^(reject|drop|accept)\s+(\S+)\s+(in|out|forward)$/i))) return t('reason.zone', {action:t('act.'+m[1].toLowerCase()), zone:m[2], dir:t('dir.'+m[3].toLowerCase())});
+  return s ? t('reason.rule', {name:s}) : '—';
+}
+// Reasons produced by fwtrace/drppkt (always English text) -> the viewer language
+function tReason(r){
+  let m;
+  if(!r) return '—';
+  if(/^DPI:/.test(r)) return t('reason.dpi');
+  if((m = r.match(/^IP & Geo Blocking: matched list (.+)$/))) return t('reason.banip', {dir:'', list:m[1]}).replace('  ',' ');
+  if(r === 'IP & Geo Blocking') return t('tab.ipb');
+  if(r === 'IPS') return t('reason.ips');
+  if(r === 'DNS Filtering') return t('reason.dns');
+  if(r === 'Invalid connection state') return t('reason.invalid');
+  if(r === 'Established or related connection') return t('reason.established');
+  if((m = r.match(/^Zone policy: (.+)$/))) return t('reason.zone_policy', {name:m[1]});
+  if((m = r.match(/^Firewall rule: (.+)$/))) return t('reason.rule', {name:m[1]});
+  if(/^Default policy/.test(r)) return t('reason.default');
+  return r;
+}
+function macsOf(msg){
+  const m = String(msg||'').match(/MAC=([0-9a-f:]{17}):([0-9a-f:]{17}):/i);
+  return m ? {dst:m[1], src:m[2]} : null;
 }
 
-function buildChipQuery(){
-  return Object.entries(filters).map(([k,v]) => `${k}:"${v.replace(/"/g,'')}"`).join(' ');
-}
-
+function buildChipQuery(){ return Object.entries(filters).map(([k,v]) => `${k}:"${q(v)}"`).join(' '); }
 function renderChips(){
   const el = document.getElementById('chips');
   el.innerHTML = '';
@@ -159,12 +425,12 @@ function renderChips(){
   }
   el.querySelectorAll('.x').forEach(x => x.onclick = () => { delete filters[x.dataset.k]; renderChips(); runQuery(); });
 }
-
 function addFilter(k,v){ filters[k]=v; renderChips(); runQuery(); }
 
-function setDebug(msg){
+function setDebug(msg, force){
   const d = document.getElementById('debug');
-  if(d) d.textContent = msg;
+  d.textContent = msg;
+  d.classList.toggle('show', DEBUG || !!force);
 }
 
 async function vlQuery(query, limit){
@@ -173,25 +439,28 @@ async function vlQuery(query, limit){
   body.set('limit', limit || 300);
   let res;
   try{
-    res = await fetch(`${API}/select/logsql/query`, {method:'POST', body});
+    res = await fetch(`${API}/logs/query`, {method:'POST', headers:authHeaders(), body});
   } catch(netErr){
-    setDebug('ERRO DE REDE: ' + netErr.message + '\nQuery: ' + query);
+    setDebug(t('ui.error') + ': ' + netErr.message + '\nQuery: ' + query, true);
     throw netErr;
   }
   const text = await res.text();
+  if(res.status === 401){
+    setDebug(t('ui.session_expired'), true);
+    throw new Error(t('ui.session_expired'));
+  }
   if(!res.ok){
-    setDebug('HTTP ' + res.status + '\nQuery: ' + query + '\nResposta: ' + text.slice(0,500));
+    setDebug('HTTP ' + res.status + '\nQuery: ' + query + '\n' + text.slice(0,500), true);
     throw new Error('HTTP ' + res.status + ': ' + text.slice(0,200));
   }
   const rows = text.trim().split('\n').filter(Boolean).map(l => { try { return JSON.parse(l); } catch(e){ return null; } }).filter(Boolean);
-  setDebug('OK · HTTP ' + res.status + ' · ' + rows.length + ' linha(s) · aba: ' + activeTab.id + ' · query: ' + query);
+  setDebug('OK · HTTP ' + res.status + ' · ' + rows.length + ' · ' + activeTab.id + ' · ' + query);
   return rows;
 }
-
 async function vlStats(query){
   const body = new URLSearchParams();
   body.set('query', query);
-  const res = await fetch(`${API}/select/logsql/query`, {method:'POST', body});
+  const res = await fetch(`${API}/logs/query`, {method:'POST', headers:authHeaders(), body});
   const text = await res.text();
   const lines = text.trim().split('\n').filter(Boolean).map(l=>JSON.parse(l));
   return lines[0] ? Number(lines[0].total || 0) : 0;
@@ -199,192 +468,388 @@ async function vlStats(query){
 
 function timeRangeVal(){ return document.getElementById('timeRange').value; }
 function freeTextVal(){ return document.getElementById('freeText').value.trim(); }
-function setHead(cols){
-  document.getElementById('tableHead').innerHTML = '<tr>' + cols.map(c=>`<th>${c}</th>`).join('') + '</tr>';
+function setHead(cols){ document.getElementById('tableHead').innerHTML = '<tr>' + cols.map(c=>`<th>${esc(c)}</th>`).join('') + '</tr>'; }
+function showActionUI(show){ document.querySelectorAll('.action-only').forEach(el => el.style.display = show ? '' : 'none'); }
+function setBody(html){ document.getElementById('tableBody').innerHTML = html; }
+function emptyRow(cols, msg){ setBody(`<tr><td colspan="${cols}" class="empty">${esc(msg)}</td></tr>`); }
+function stamp(label){ document.getElementById('lastUpdate').textContent = label; }
+
+async function withStats(rowsPromise, render, countQ, blockedQ){
+  stamp(t('ui.updating'));
+  try{
+    const rows = await rowsPromise();
+    render(rows);
+    document.getElementById('statTotal').textContent = await vlStats(countQ);
+    if(blockedQ){
+      const total = Number(document.getElementById('statTotal').textContent);
+      const blocked = await vlStats(blockedQ);
+      document.getElementById('statBlocked').textContent = blocked;
+      document.getElementById('statAllowed').textContent = Math.max(total - blocked, 0);
+    }
+  } catch(e){
+    setBody(`<tr><td class="empty">${esc(t('ui.error'))}: ${esc(e.message)}</td></tr>`);
+  }
+  stamp(t('ui.updated') + ' ' + new Date().toLocaleTimeString(LOCALES[LANG]));
 }
 
-function toggleActionUI(show){
-  document.querySelectorAll('.action-only').forEach(el => el.style.display = show ? '' : 'none');
-}
-
+/* -------------------------------------------------------- netfilter tabs */
 async function runNetfilterTab(){
   const tab = activeTab;
-  const range = timeRangeVal();
-  const free = freeTextVal();
   const actionSel = document.getElementById('actionFilter').value;
-  let base = `_time:${range} app_name:kernel`;
-  if(free) base += ` "${free.replace(/"/g,'')}"`;
-  const extract = `extract_regexp "${fwRegex()}"`;
+  let base = `_time:${timeRangeVal()} app_name:kernel`;
+  if(freeTextVal()) base += ` "${q(freeTextVal())}"`;
   const chipQ = buildChipQuery();
-  let core = `${base} | ${extract} | filter nf_action:*`;
+  let core = `${base} | extract_regexp "${fwRegex()}" | filter nf_action:*`;
   if(tab.extra) core += ` | filter (${tab.extra})`;
   if(chipQ) core += ` | filter (${chipQ})`;
+  const BLK = 'nf_action:~"(?i)reject|drop|banip|dpi|block"';
+  let qy = core;
+  if(actionSel === 'block') qy += ` | filter (${BLK})`;
+  if(actionSel === 'allow') qy += ' | filter (nf_action:~"(?i)accept|allow")';
+  qy += ' | sort by (_time) desc';
 
-  let q = core;
-  if(actionSel === 'block') q += ' | filter (nf_action:~"(?i)reject|drop|banip")';
-  if(actionSel === 'allow') q += ' | filter (nf_action:~"(?i)accept|allow")';
-  q += ' | sort by (_time) desc';
-
-  setHead(['Hora','Ação','Regra/Direção','Origem','Destino','Protocolo','Interface','']);
-  toggleActionUI(true);
-  document.getElementById('lastUpdate').textContent = 'Atualizando...';
-  try{
-    const rows = await vlQuery(q, 300);
-    renderNetfilterRows(rows);
-    const total = await vlStats(`${core} | stats count() as total`);
-    const blocked = await vlStats(`${core} | filter (nf_action:~"(?i)reject|drop|banip") | stats count() as total`);
-    document.getElementById('statTotal').textContent = total;
-    document.getElementById('statBlocked').textContent = blocked;
-    document.getElementById('statAllowed').textContent = Math.max(total-blocked,0);
-  } catch(e){
-    document.getElementById('tableBody').innerHTML = `<tr><td class="empty">Erro: ${esc(e.message)}</td></tr>`;
-  }
-  document.getElementById('lastUpdate').textContent = 'Atualizado ' + new Date().toLocaleTimeString('pt-BR');
+  const cols = [t('col.time'), t('col.action'), t('col.reason'), t('col.source'), t('col.destination'), t('col.protocol'), t('col.interface'), ''];
+  setHead(cols); showActionUI(true);
+  await withStats(() => vlQuery(qy, 300), renderNetfilterRows, `${core} | stats count() as total`, `${core} | filter (${BLK}) | stats count() as total`);
 }
-
 function renderNetfilterRows(rows){
-  const body = document.getElementById('tableBody');
-  if(!rows.length){ body.innerHTML = '<tr><td colspan="8" class="empty">Nenhum evento encontrado para os filtros atuais.</td></tr>'; return; }
-  body.innerHTML = rows.map((r,i) => {
-    const cls = classify(r.nf_action);
-    const badgeLabel = cls==='block' ? 'Bloqueado' : (cls==='allow' ? 'Permitido' : 'Outro');
+  if(!rows.length){ emptyRow(8, t('ui.none')); return; }
+  setBody(rows.map((r,i) => {
+    const act = cleanAction(r.nf_action);
+    const cls = classify(act);
     const proto = PROTO_NAMES[r.proto] || r.proto || '—';
     const src = r.src_ip ? `${r.src_ip}${r.spt ? ':'+r.spt:''}` : '—';
     const dst = r.dst_ip ? `${r.dst_ip}${r.dpt ? ':'+r.dpt:''}` : '—';
     const iface = `${r.in_if||'—'} → ${r.out_if||'—'}`;
-    const time = r._time ? new Date(r._time).toLocaleString('pt-BR') : '—';
+    const mac = macsOf(r._msg);
+    const macTxt = mac ? `MAC ${mac.src} → ${mac.dst}\n` : '';
+    const tr = r.src_ip ? `data-src="${esc(r.src_ip)}" data-dst="${esc(r.dst_ip)}" data-port="${esc(r.dpt||'')}" data-proto="${esc((PROTO_NAMES[r.proto]||'').toLowerCase())}"` : '';
     return `<tr>
-      <td class="mono">${esc(time)}</td>
-      <td><span class="badge ${cls}">${badgeLabel}</span></td>
-      <td class="clickable" data-k="nf_action" data-v="${esc(r.nf_action)}">${esc(r.nf_action||'—')}</td>
+      <td class="mono">${esc(fmtDate(r._time))}</td>
+      <td><span class="badge ${cls}">${esc(badgeLabel(cls))}</span></td>
+      <td class="reason clickable" data-k="nf_action" data-v="${esc(r.nf_action)}">${esc(describeReason(act))}</td>
       <td class="mono clickable" data-k="src_ip" data-v="${esc(r.src_ip)}">${esc(src)}</td>
       <td class="mono clickable" data-k="dst_ip" data-v="${esc(r.dst_ip)}">${esc(dst)}</td>
       <td class="clickable" data-k="proto" data-v="${esc(r.proto)}">${esc(proto)}</td>
       <td class="mono">${esc(iface)}</td>
-      <td><span class="msg-toggle" data-i="${i}">detalhes</span><div class="msg-full" id="msg-${i}" style="display:none">${esc(r._msg)}</div></td>
+      <td><span class="msg-toggle" data-i="${i}">${esc(t('ui.details'))}</span>${r.src_ip ? `<span class="msg-toggle traceit" ${tr}>${esc(t('ui.trace_this'))}</span>` : ''}<div class="msg-full" id="msg-${i}" style="display:none">${esc(macTxt + act + '\n' + r._msg)}</div></td>
     </tr>`;
-  }).join('');
-  bindRowInteractions(body);
+  }).join(''));
+  bindRowInteractions();
 }
 
+/* ------------------------------------------------------------------- IPS */
 async function runIpsTab(){
-  const range = timeRangeVal();
-  const free = freeTextVal();
   const actionSel = document.getElementById('actionFilter').value;
-  let base = `_time:${range} app_name:"snort-ips"`;
-  if(free) base += ` "${free.replace(/"/g,'')}"`;
+  let base = `_time:${timeRangeVal()} app_name:"snort-ips"`;
+  if(freeTextVal()) base += ` "${q(freeTextVal())}"`;
   const chipQ = buildChipQuery();
   let core = `${base} | unpack_json`;
   if(chipQ) core += ` | filter (${chipQ})`;
-  let q = core;
-  if(actionSel === 'block') q += ' | filter (action:~"(?i)drop|block|reject")';
-  if(actionSel === 'allow') q += ' | filter (action:~"(?i)alert")';
-  q += ' | sort by (_time) desc';
-
-  setHead(['Hora','Ação','Regra (GID:SID)','Origem','Destino','Protocolo','Descrição','']);
-  toggleActionUI(true);
-  document.getElementById('lastUpdate').textContent = 'Atualizando...';
-  try{
-    const rows = await vlQuery(q, 300);
-    renderIpsRows(rows);
-    const total = await vlStats(`${core} | stats count() as total`);
-    const blocked = await vlStats(`${core} | filter (action:~"(?i)drop|block|reject") | stats count() as total`);
-    document.getElementById('statTotal').textContent = total;
-    document.getElementById('statBlocked').textContent = blocked;
-    document.getElementById('statAllowed').textContent = Math.max(total-blocked,0);
-  } catch(e){
-    document.getElementById('tableBody').innerHTML = `<tr><td class="empty">Erro: ${esc(e.message)}</td></tr>`;
-  }
-  document.getElementById('lastUpdate').textContent = 'Atualizado ' + new Date().toLocaleTimeString('pt-BR');
+  const BLK = 'action:~"(?i)drop|block|reject"';
+  let qy = core;
+  if(actionSel === 'block') qy += ` | filter (${BLK})`;
+  if(actionSel === 'allow') qy += ' | filter (action:~"(?i)alert")';
+  qy += ' | sort by (_time) desc';
+  setHead([t('col.time'), t('col.action'), t('col.rule_gidsid'), t('col.source'), t('col.destination'), t('col.protocol'), t('col.description')]);
+  showActionUI(true);
+  await withStats(() => vlQuery(qy, 300), renderIpsRows, `${core} | stats count() as total`, `${core} | filter (${BLK}) | stats count() as total`);
 }
-
 function renderIpsRows(rows){
-  const body = document.getElementById('tableBody');
-  if(!rows.length){ body.innerHTML = '<tr><td colspan="7" class="empty">Nenhum alerta de IPS/IDS no período. (O Snort só inspeciona tráfego roteado LAN↔WAN; ainda não passou tráfego correspondente por uma regra.)</td></tr>'; return; }
-  body.innerHTML = rows.map((r,i) => {
+  if(!rows.length){ emptyRow(7, t('empty.ips')); return; }
+  setBody(rows.map((r,i) => {
     const cls = classifyIps(r.action);
-    const badgeLabel = cls==='block' ? 'Bloqueado' : 'Alerta';
     const proto = PROTO_NAMES[r.proto] || r.proto || '—';
     const src = r.src_addr ? `${r.src_addr}${r.src_port ? ':'+r.src_port:''}` : '—';
     const dst = r.dst_addr ? `${r.dst_addr}${r.dst_port ? ':'+r.dst_port:''}` : '—';
     const rule = (r.gid && r.sid) ? `${r.gid}:${r.sid}:${r.rev||0}` : '—';
-    const time = r._time ? new Date(r._time).toLocaleString('pt-BR') : '—';
     return `<tr>
-      <td class="mono">${esc(time)}</td>
-      <td><span class="badge ${cls}">${badgeLabel}</span></td>
+      <td class="mono">${esc(fmtDate(r._time))}</td>
+      <td><span class="badge ${cls}">${esc(cls==='block' ? t('badge.blocked') : t('badge.alert'))}</span></td>
       <td class="mono clickable" data-k="rule" data-v="${esc(rule)}">${esc(rule)}</td>
       <td class="mono clickable" data-k="src_addr" data-v="${esc(r.src_addr)}">${esc(src)}</td>
       <td class="mono clickable" data-k="dst_addr" data-v="${esc(r.dst_addr)}">${esc(dst)}</td>
       <td class="clickable" data-k="proto" data-v="${esc(r.proto)}">${esc(proto)}</td>
-      <td>${esc(r.msg||'—')}<div><span class="msg-toggle" data-i="${i}">json bruto</span><div class="msg-full" id="msg-${i}" style="display:none">${esc(r._msg)}</div></div></td>
+      <td>${esc(r.msg||'—')}<div><span class="msg-toggle" data-i="${i}">${esc(t('ui.raw'))}</span><div class="msg-full" id="msg-${i}" style="display:none">${esc(r._msg)}</div></div></td>
     </tr>`;
-  }).join('');
-  bindRowInteractions(body);
+  }).join(''));
+  bindRowInteractions();
 }
 
+/* ------------------------------------------------------- plain syslog tabs */
 async function runSimpleTab(){
   const tab = activeTab;
-  const range = timeRangeVal();
-  const free = freeTextVal();
-  let base = `_time:${range}`;
+  let base = `_time:${timeRangeVal()}`;
   if(tab.base) base += ` ${tab.base}`;
-  if(free) base += ` "${free.replace(/"/g,'')}"`;
-  const q = `${base} | sort by (_time) desc`;
-
-  setHead(['Hora','Host','Processo','Severidade','Mensagem']);
-  toggleActionUI(false);
-  document.getElementById('lastUpdate').textContent = 'Atualizando...';
-  try{
-    const rows = await vlQuery(q, 300);
-    renderSimpleRows(rows);
-    const total = await vlStats(`${base} | stats count() as total`);
-    document.getElementById('statTotal').textContent = total;
-  } catch(e){
-    document.getElementById('tableBody').innerHTML = `<tr><td class="empty">Erro: ${esc(e.message)}</td></tr>`;
-  }
-  document.getElementById('lastUpdate').textContent = 'Atualizado ' + new Date().toLocaleTimeString('pt-BR');
+  if(freeTextVal()) base += ` "${q(freeTextVal())}"`;
+  setHead([t('col.time'), t('col.host'), t('col.process'), t('col.severity'), t('col.message')]);
+  showActionUI(false);
+  await withStats(() => vlQuery(`${base} | sort by (_time) desc`, 300), renderSimpleRows, `${base} | stats count() as total`);
 }
-
 function renderSimpleRows(rows){
-  const body = document.getElementById('tableBody');
-  if(!rows.length){ body.innerHTML = '<tr><td colspan="5" class="empty">Nenhum log encontrado para esta categoria no período selecionado.</td></tr>'; return; }
-  body.innerHTML = rows.map(r => {
-    const time = r._time ? new Date(r._time).toLocaleString('pt-BR') : '—';
+  if(!rows.length){ emptyRow(5, t('empty.' + activeTab.id) !== 'empty.' + activeTab.id ? t('empty.' + activeTab.id) : t('empty.generic')); return; }
+  setBody(rows.map(r => {
     const lvl = (r.level||'info').toLowerCase();
     return `<tr>
-      <td class="mono">${esc(time)}</td>
+      <td class="mono">${esc(fmtDate(r._time))}</td>
       <td class="mono">${esc(r.hostname)}</td>
       <td class="mono">${esc(r.app_name)}</td>
       <td class="sev-${esc(lvl)}">${esc(r.level||'—')}</td>
       <td>${esc(r._msg)}</td>
     </tr>`;
-  }).join('');
+  }).join(''));
 }
 
-function bindRowInteractions(body){
+/* -------------------------------------------------------- reverse proxy */
+// nginx access lines of published domains: <client> - - [date] "METHOD /uri HTTP/x" status bytes ...
+const NGX_RE = '(?P<client>[0-9a-fA-F:.]+) - [^ ]* \\[[^\\]]*\\] "(?P<method>[A-Z]+) (?P<uri>[^ ]+) [^"]*" (?P<status>[0-9]{3}) (?P<bytes>[0-9]+)';
+async function runNginxTab(){
+  let base = `_time:${timeRangeVal()} app_name:nginx`;
+  if(freeTextVal()) base += ` "${q(freeTextVal())}"`;
+  const chipQ = buildChipQuery();
+  let core = `${base} | extract_regexp \`${NGX_RE}\``;   // backtick string: no escaping needed for the quotes/brackets inside
+  if(chipQ) core += ` | filter (${chipQ})`;
+  setHead([t('col.time'), t('col.client'), t('col.request'), t('col.status'), t('col.bytes'), t('col.message')]);
+  showActionUI(false);
+  await withStats(() => vlQuery(`${core} | sort by (_time) desc`, 300), renderNginxRows, `${core} | stats count() as total`);
+}
+function renderNginxRows(rows){
+  if(!rows.length){ emptyRow(6, t('empty.rproxy')); return; }
+  setBody(rows.map((r,i) => {
+    const st = Number(r.status||0);
+    const cls = st >= 500 ? 'block' : (st >= 400 ? 'other' : 'allow');
+    return `<tr>
+      <td class="mono">${esc(fmtDate(r._time))}</td>
+      <td class="mono clickable" data-k="client" data-v="${esc(r.client)}">${esc(r.client||'—')}</td>
+      <td class="mono">${esc(r.method ? r.method + ' ' + r.uri : '—')}</td>
+      <td>${r.status ? `<span class="badge ${cls}">${esc(r.status)}</span>` : '—'}</td>
+      <td class="mono">${esc(r.bytes||'')}</td>
+      <td>${r.status ? `<span class="msg-toggle" data-i="${i}">${esc(t('ui.raw'))}</span><div class="msg-full" id="msg-${i}" style="display:none">${esc(r._msg)}</div>` : esc(r._msg)}</td>
+    </tr>`;
+  }).join(''));
+  bindRowInteractions();
+}
+
+/* -------------------------------------------------- authentication tab */
+async function runAuthTab(){
+  let base = `_time:${timeRangeVal()} (app_name:dropbear OR app_name:nethsecurity-api) ("auth succeeded" OR "Bad password" OR "nonexistent user" OR "authentication success" OR "authentication failed")`;
+  if(freeTextVal()) base += ` "${q(freeTextVal())}"`;
+  setHead([t('col.time'), t('col.result'), t('col.user'), t('col.source'), t('col.via'), t('col.message')]);
+  showActionUI(false);
+  await withStats(() => vlQuery(`${base} | sort by (_time) desc`, 300), rows => renderAuthRows(rows), `${base} | stats count() as total`);
+}
+function parseAuth(r){
+  const m = String(r._msg||'');
+  let x;
+  if(r.app_name === 'dropbear'){
+    if((x = m.match(/Password auth succeeded for '([^']*)' from ([0-9a-fA-F:.]+)/))) return {ok:true, user:x[1], ip:x[2], via:'SSH'};
+    if((x = m.match(/Bad password attempt for '([^']*)' from ([0-9a-fA-F:.]+)/))) return {ok:false, user:x[1], ip:x[2], via:'SSH'};
+    if((x = m.match(/Login attempt for nonexistent user (?:'([^']*)' )?from ([0-9a-fA-F:.]+)/))) return {ok:false, user:x[1]||'?', ip:x[2], via:'SSH'};
+    return null;
+  }
+  if((x = m.match(/authentication success for user ([^ ]+)(?: from ([0-9a-fA-F:.<>ip]+))?/))) return {ok:true, user:x[1], ip:x[2]||'', via:'Web'};
+  if((x = m.match(/authentication failed for user ([^ ]+)(?: from ([0-9a-fA-F:.<>ip]+))?/))) return {ok:false, user:x[1], ip:x[2]||'', via:'Web'};
+  return null;
+}
+function renderAuthRows(rows){
+  const items = rows.map(r => ({r, a:parseAuth(r)})).filter(x => x.a);
+  if(!items.length){ emptyRow(6, t('empty.auth')); return; }
+  setBody(items.map(({r,a}) => `<tr>
+      <td class="mono">${esc(fmtDate(r._time))}</td>
+      <td><span class="badge ${a.ok?'allow':'block'}">${esc(a.ok ? t('badge.ok') : t('badge.failed'))}</span></td>
+      <td>${esc(a.user)}</td>
+      <td class="mono">${esc(a.ip||'—')}</td>
+      <td>${esc(a.via)}</td>
+      <td class="mono" style="color:var(--gray-500)">${esc(r._msg)}</td>
+    </tr>`).join(''));
+}
+
+/* -------------------------------------------------------- admin activity */
+// Every authenticated API call is logged by the management API with the request body (secrets masked).
+// Configuration changes are the calls whose ubus method starts with a changing verb.
+const CHANGING = '(add|edit|delete|set|save|enable|disable|remove|create|update|apply|import|restore|reset|start|stop|restart|reboot|register|unregister|commit|revert|upload|rename|move|renew|regenerate|disconnect)';
+async function runAdminTab(){
+  let base = `_time:${timeRangeVal()} app_name:nethsecurity-api "authorization success for user" _msg:~"\\"method\\":\\"${CHANGING}"`;
+  if(freeTextVal()) base += ` "${q(freeTextVal())}"`;
+  setHead([t('col.time'), t('col.user'), t('col.area'), t('col.what'), t('col.message')]);
+  showActionUI(false);
+  await withStats(() => vlQuery(`${base} | sort by (_time) desc`, 300), renderAdminRows, `${base} | stats count() as total`);
+}
+function renderAdminRows(rows){
+  if(!rows.length){ emptyRow(5, t('empty.admin')); return; }
+  setBody(rows.map((r,i) => {
+    const m = String(r._msg||'');
+    const user = (m.match(/for user ([^. ]+)/)||[])[1] || '—';
+    const path = (m.match(/"path":"([^"]+)"/)||[])[1] || '—';
+    const meth = (m.match(/"method":"([^"]+)"/)||[])[1] || '—';
+    return `<tr>
+      <td class="mono">${esc(fmtDate(r._time))}</td>
+      <td>${esc(user)}</td>
+      <td class="mono">${esc(path)}</td>
+      <td class="mono">${esc(meth)}</td>
+      <td><span class="msg-toggle" data-i="${i}">${esc(t('ui.details'))}</span><div class="msg-full" id="msg-${i}" style="display:none">${esc(m.replace(/^.*?authorization success for user [^ ]+\. /, ''))}</div></td>
+    </tr>`;
+  }).join(''));
+  bindRowInteractions();
+}
+
+/* ------------------------------------------------- live trace (fwtrace/drppkt) */
+let trace = {id:null, timer:null, next:0, count:0, rows:[]};
+function traceFormBody(){
+  const v = id => document.getElementById(id).value.trim();
+  const body = {tool: activeTab.tool, both: document.getElementById('tBoth').checked, seconds: Number(v('tSecs'))};
+  if(v('tHost')) body.host = v('tHost');
+  if(v('tSrcHost')) body.src_host = v('tSrcHost');
+  if(v('tNet')) body.net = v('tNet');
+  if(v('tSrcNet')) body.src_net = v('tSrcNet');
+  if(v('tPort')) body.port = Number(v('tPort'));
+  if(v('tSrcPort')) body.src_port = Number(v('tSrcPort'));
+  if(v('tProto')) body.proto = v('tProto');
+  return body;
+}
+function traceSetRunning(on){
+  document.getElementById('tStart').disabled = on;
+  document.getElementById('tStop').disabled = !on;
+}
+function traceHead(){
+  setHead([t('col.time'), t('col.protocol'), t('col.source'), t('col.destination'), t('col.decision'), t('col.rule'), t('col.reason')]);
+}
+async function traceStart(){
+  const body = traceFormBody();
+  if(!(body.host||body.src_host||body.net||body.src_net||body.port||body.src_port||body.proto)){
+    document.getElementById('tStatus').textContent = t('trace.need_filter'); return;
+  }
+  traceStop(true);
+  trace = {id:null, timer:null, next:0, count:0, rows:[]};
+  traceHead();
+  setBody(`<tr><td colspan="7" class="empty">${esc(t('trace.none'))}</td></tr>`);
+  let res, data;
+  try{
+    res = await fetch(`${API}/trace/start`, {method:'POST', headers:authHeaders({'Content-Type':'application/json'}), body:JSON.stringify(body)});
+    data = await res.json();
+  } catch(e){ document.getElementById('tStatus').textContent = t('trace.err') + ': ' + e.message; return; }
+  if(res.status === 401){ document.getElementById('tStatus').textContent = t('ui.session_expired'); return; }
+  if(res.status === 409){ document.getElementById('tStatus').textContent = t('trace.busy'); return; }
+  if(!res.ok){ document.getElementById('tStatus').textContent = t('trace.err') + ': ' + (data.message||res.status); return; }
+  trace.id = data.data.id;
+  traceSetRunning(true);
+  document.getElementById('tStatus').textContent = t('trace.running', {n:0});
+  trace.timer = setInterval(tracePoll, 1000);
+  tracePoll();
+}
+async function tracePoll(){
+  if(!trace.id) return;
+  let d;
+  try{
+    const res = await fetch(`${API}/trace/${trace.id}?since=${trace.next}`, {headers:authHeaders()});
+    d = (await res.json()).data;
+  } catch(e){ return; }
+  if(!d) return;
+  d.lines.forEach(l => { try { trace.rows.push(JSON.parse(l)); } catch(e){} });
+  trace.next = d.next;
+  renderTraceRows();
+  document.getElementById('tStatus').textContent = d.running ? t('trace.running', {n:trace.rows.length}) : (t('trace.finished', {n:trace.rows.length}) + (d.error ? ' · ' + d.error.trim() : ''));
+  if(!d.running){ clearInterval(trace.timer); trace.timer = null; traceSetRunning(false); }
+}
+function traceStop(silent){
+  if(trace.timer){ clearInterval(trace.timer); trace.timer = null; }
+  if(trace.id){
+    fetch(`${API}/trace/${trace.id}/stop`, {method:'POST', headers:authHeaders()}).catch(()=>{});
+    if(!silent) tracePoll();
+  }
+  traceSetRunning(false);
+}
+function renderTraceRows(){
+  if(!trace.rows.length){ setBody(`<tr><td colspan="7" class="empty">${esc(t('trace.none'))}</td></tr>`); return; }
+  const rows = trace.rows.slice().reverse();
+  setBody(rows.map((r,i) => {
+    const cls = r.decision === 'ACCEPT' ? 'allow' : (r.decision === 'QUEUE' ? 'other' : 'block');
+    const src = r.src + (r.sport && r.sport !== '-' ? ':' + r.sport : '');
+    const dst = r.dst + (r.dport && r.dport !== '-' ? ':' + r.dport : '');
+    const rule = r.rule || `(${r.chain})`;
+    const path = (r.path && r.path.length) ? `<div><span class="msg-toggle" data-i="${i}">${esc(t('trace.path'))} (${r.path.length})</span><div class="path" id="msg-${i}" style="display:none">${r.path.map(p => `<div>${esc((p.chain||'') + '  ' + (p.verdict||'') + '  ' + (p.rule||''))}</div>`).join('')}</div></div>` : '';
+    const nat = r.nat ? `<div style="color:var(--gray-500);font-size:11px">NAT: ${esc(r.nat)}</div>` : '';
+    return `<tr>
+      <td class="mono">${esc(r.time)}</td>
+      <td>${esc(r.proto)}</td>
+      <td class="mono">${esc(src)}</td>
+      <td class="mono">${esc(dst)}</td>
+      <td><span class="badge ${cls}">${esc(r.decision)}</span></td>
+      <td class="mono">${esc(rule)}</td>
+      <td class="reason">${esc(tReason(r.reason))}${nat}${path}</td>
+    </tr>`;
+  }).join(''));
+  bindRowInteractions();
+}
+function openTraceFrom(el){
+  activeTab = TABS.find(x => x.id === 'fwtrace');
+  const set = (id, v) => document.getElementById(id).value = v || '';
+  ['tHost','tSrcHost','tNet','tSrcNet','tPort','tSrcPort','tProto'].forEach(id => set(id, ''));
+  set('tSrcHost', el.dataset.src); set('tHost', el.dataset.dst); set('tPort', el.dataset.port);
+  if(['tcp','udp','icmp'].includes(el.dataset.proto)) set('tProto', el.dataset.proto);
+  document.getElementById('tBoth').checked = true;
+  selectTab();
+}
+
+/* ---------------------------------------------------------------- shell */
+function bindRowInteractions(){
+  const body = document.getElementById('tableBody');
   body.querySelectorAll('.clickable').forEach(el => el.onclick = () => { if(el.dataset.v) addFilter(el.dataset.k, el.dataset.v); });
-  body.querySelectorAll('.msg-toggle').forEach(el => el.onclick = () => {
+  body.querySelectorAll('.msg-toggle:not(.traceit)').forEach(el => el.onclick = () => {
     const d = document.getElementById('msg-'+el.dataset.i);
-    d.style.display = d.style.display === 'none' ? 'block' : 'none';
+    if(d) d.style.display = d.style.display === 'none' ? 'block' : 'none';
   });
+  body.querySelectorAll('.traceit').forEach(el => el.onclick = () => openTraceFrom(el));
 }
 
 function runQuery(){
-  if(activeTab.kind === 'netfilter') return runNetfilterTab();
-  if(activeTab.kind === 'ips') return runIpsTab();
-  return runSimpleTab();
+  switch(activeTab.kind){
+    case 'netfilter': return runNetfilterTab();
+    case 'ips': return runIpsTab();
+    case 'nginx': return runNginxTab();
+    case 'auth': return runAuthTab();
+    case 'admin': return runAdminTab();
+    case 'trace': return;   // driven by its own Start button
+    default: return runSimpleTab();
+  }
 }
-
+function selectTab(){
+  filters = {}; renderChips(); renderTabsBar();
+  const isTrace = activeTab.kind === 'trace';
+  document.getElementById('searchBar').style.display = isTrace ? 'none' : '';
+  document.getElementById('statsBar').style.display = isTrace ? 'none' : '';
+  document.getElementById('chips').style.display = isTrace ? 'none' : '';
+  document.getElementById('tracePanel').style.display = isTrace ? '' : 'none';
+  if(isTrace){
+    document.getElementById('traceDesc').textContent = t(activeTab.tool === 'fwtrace' ? 'trace.desc_fw' : 'trace.desc_dr');
+    traceHead(); renderTraceRows();
+    document.getElementById('tStatus').textContent = '';
+  } else {
+    traceStop(true);
+    runQuery();
+  }
+  setupAutoRefresh();
+}
 function renderTabsBar(){
   const bar = document.getElementById('tabsBar');
-  bar.innerHTML = TABS.map(t => `<div class="tab${t===activeTab?' active':''}" data-id="${t.id}">${esc(t.label)}</div>`).join('');
-  bar.querySelectorAll('.tab').forEach(el => el.onclick = () => {
-    activeTab = TABS.find(t => t.id === el.dataset.id);
-    filters = {};
-    renderChips();
-    renderTabsBar();
-    runQuery();
-  });
+  bar.innerHTML = TABS.map(tab => `<div class="tab${tab===activeTab?' active':''}${tab.sep?' sep':''}" data-id="${tab.id}">${esc(tabLabel(tab))}</div>`).join('');
+  bar.querySelectorAll('.tab').forEach(el => el.onclick = () => { activeTab = TABS.find(x => x.id === el.dataset.id); selectTab(); });
+}
+function setupAutoRefresh(){
+  if(timer) clearInterval(timer);
+  timer = null;
+  if(activeTab.kind !== 'trace' && document.getElementById('autoRefresh').checked) timer = setInterval(runQuery, 10000);
+}
+
+function exportCsv(){
+  const rows = [...document.querySelectorAll('#dataTable tr')].map(tr => [...tr.children].map(td => td.innerText.replace(/\s+/g,' ').trim()));
+  if(rows.length < 2) return;
+  const csv = rows.map(r => r.map(c => '"' + c.replace(/"/g,'""') + '"').join(',')).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8'}));
+  a.download = `nexwall-${activeTab.id}-${new Date().toISOString().slice(0,19).replace(/[:T]/g,'-')}.csv`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
 document.getElementById('btnSearch').onclick = runQuery;
@@ -392,19 +857,15 @@ document.getElementById('timeRange').onchange = runQuery;
 document.getElementById('actionFilter').onchange = runQuery;
 document.getElementById('freeText').addEventListener('keydown', e => { if(e.key==='Enter') runQuery(); });
 document.getElementById('btnClear').onclick = () => { filters={}; document.getElementById('freeText').value=''; document.getElementById('actionFilter').value=''; renderChips(); runQuery(); };
+document.getElementById('btnExport').onclick = exportCsv;
 document.getElementById('autoRefresh').onchange = setupAutoRefresh;
+document.getElementById('tStart').onclick = traceStart;
+document.getElementById('tStop').onclick = () => traceStop(false);
+document.getElementById('langSel').onchange = e => { LANG = e.target.value; sessionStorage.setItem('nx_logviewer_lang', LANG); applyStaticI18n(); selectTab(); };
+window.addEventListener('beforeunload', () => traceStop(true));
 
-function setupAutoRefresh(){
-  if(timer) clearInterval(timer);
-  if(document.getElementById('autoRefresh').checked){
-    timer = setInterval(runQuery, 10000);
-  }
-}
-
-renderTabsBar();
-renderChips();
-runQuery();
-setupAutoRefresh();
+applyStaticI18n();
+selectTab();
 </script>
 </body>
 </html>

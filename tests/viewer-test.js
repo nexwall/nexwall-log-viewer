@@ -4,14 +4,14 @@ const html = fs.readFileSync(require('path').join(__dirname,'..','deploy/www-ns/
 const js = html.match(/<script>([\s\S]*)<\/script>/)[1];
 const els = {};
 const mk = () => new Proxy(function(){}, { get:(t,k)=> k==='style'?{}: k==='dataset'?{}: k==='classList'?{toggle(){}}: k==='children'?[]: k==='value'?'': k==='checked'?true: (k in t ? t[k] : (k==='querySelectorAll' ? ()=>[] : function(){})), set:(t,k,v)=>{t[k]=v;return true}, apply:()=>undefined });
-const doc = { getElementById:id=>els[id]||(els[id]=mk()), querySelectorAll:()=>[], documentElement:{}, createElement:()=>mk() };
+const doc = { addEventListener(){}, getElementById:id=>els[id]||(els[id]=mk()), querySelectorAll:()=>[], documentElement:{}, createElement:()=>mk() };
 const store = {};
 const ctx = { document:doc, window:{addEventListener(){}}, navigator:{language:'en-US'}, location:{search:'', pathname:'/logs-viewer/'}, history:{replaceState(){}},
   sessionStorage:{getItem:k=>store[k]||null,setItem:(k,v)=>store[k]=v}, URLSearchParams, fetch:()=>Promise.reject(new Error('no net')),
   setInterval(){return 1}, clearInterval(){}, setTimeout(){}, console, Blob:function(){}, URL:{createObjectURL(){},revokeObjectURL(){}} };
 ctx.globalThis = ctx;
 vm.createContext(ctx);
-vm.runInContext(js + '\n;globalThis.__x = {I18N,t,describeReason,tReason,classify,parseAuth,cleanAction,macsOf,TABS,setLang:(l)=>{LANG=l}};', ctx);
+vm.runInContext(js + '\n;globalThis.__x = {I18N,t,describeReason,tReason,classify,parseAuth,cleanAction,macsOf,TABS,fmtBytes,fmtDur,fwRegex,setLang:(l)=>{LANG=l}};', ctx);
 const X = ctx.__x; let fail = 0;
 const ok = (c, m) => { if(!c){ console.log('FAIL', m); fail++; } else console.log('ok  ', m); };
 
@@ -43,4 +43,14 @@ a = X.parseAuth({app_name:'nethsecurity-api', _msg:'[INFO][AUTH] authentication 
 ok(X.parseAuth({app_name:'dropbear', _msg:'Child connection from 1.2.3.4:1'}) === null, 'noise ignored');
 // 7. MAC
 const m = X.macsOf('IN=br-lan OUT= MAC=00:0c:29:fb:88:81:00:0c:29:fc:86:b9:08:00 SRC=1.1.1.1'); ok(m && m.src==='00:0c:29:fc:86:b9' && m.dst==='00:0c:29:fb:88:81', 'MAC src/dst');
+// 8. traffic and applications tab, formatting, and the action extraction that once hid every DPI row
+ok(X.TABS.some(t => t.id === 'flows' && t.kind === 'flows'), 'flows tab exists');
+for (const l of ['en','es','pt-BR']) for (const k of ['empty.flows','col.application','col.volume','col.duration','col.state','badge.active','badge.ended']) ok(X.I18N[l][k], `${l}: ${k}`);
+ok(X.fmtBytes(0) === '0 B' && X.fmtBytes(1536) === '1.5 KB' && X.fmtBytes(5*1024*1024*1024) === '5.0 GB', 'fmtBytes');
+ok(X.fmtDur(450) === '450 ms' && X.fmtDur(75000) === '1 min 15 s' && X.fmtDur(3*3600*1000+5*60000) === '3 h 5 min', 'fmtDur');
+for (const line of [' DPI block: IN=br-lan OUT= SRC=1.1.1.1 DST=2.2.2.2 PROTO=TCP', '[ 123.456] DPI block: IN=br-lan OUT= SRC=1.1.1.1 DST=2.2.2.2 PROTO=TCP', 'DPI block: IN=br-lan OUT= SRC=1.1.1.1 DST=2.2.2.2 PROTO=TCP']) {
+  const re = new RegExp(X.fwRegex().replace(/\\\\/g, '\\').replace(/\(\?P</g, '(?<'));
+  const m = re.exec(line);
+  ok(m && /^dpi/i.test(m.groups.nf_action) && m.groups.src_ip === '1.1.1.1', 'nf_action clean: ' + JSON.stringify(m && m.groups.nf_action));
+}
 console.log(fail ? `\n${fail} FAILED` : '\nALL PASSED'); process.exit(fail?1:0);

@@ -37,6 +37,7 @@ Each module tab shows only the *decisions* of that service; the raw, unfiltered 
 | Firewall traffic | kernel `nft log` lines | Action, **Reason**, source/destination, protocol, interfaces, source MAC in details; a *trace* link opens the live tracer for that flow |
 | IP & Geo Blocking | kernel lines with the `banIP/...` prefix | reason names the direction and the list that matched |
 | IPS / IDS | Snort JSON alerts (imfile) | |
+| Traffic and applications | connection records of `ns-flowlog` (application, host, bytes, duration) | written only while this page is open; the connections open at that moment are listed first |
 | DPI | kernel lines with the `DPI block` prefix | the application name is not in the kernel line (see gaps) |
 | DNS Filtering | dnsmasq `... is NXDOMAIN` | blocks only |
 | VPN | OpenVPN / strongSwan connection and authentication events | keepalive chatter filtered out |

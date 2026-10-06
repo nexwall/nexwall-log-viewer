@@ -174,7 +174,7 @@ let currentRows = [];   // last rendered table (array of arrays of strings) - wh
 const I18N = {
 en: {
  'app.title':'FIREWALL LOG VIEWER',
- 'tab.fw':'Firewall traffic','tab.ipb':'IP & Geo Block','tab.ips':'Network Protection (IPS)','tab.dpi':'Application Control (DPI)','tab.dns':'DNS Protection','tab.dropped':'Dropped Packets','tab.vpn':'VPN',
+ 'tab.fw':'Firewall traffic','tab.flows':'Traffic and applications','col.application':'Application','col.volume':'Volume (out / in)','col.duration':'Duration','col.state':'State','badge.active':'Active','badge.ended':'Ended','empty.flows':'No traffic records in this period. They are collected while this page is open (and the current connections are listed when it opens).','tab.ipb':'IP & Geo Block','tab.ips':'Network Protection (IPS)','tab.dpi':'Application Control (DPI)','tab.dns':'DNS Protection','tab.dropped':'Dropped Packets','tab.vpn':'VPN',
  'tab.ha':'High Availability','tab.rproxy':'Reverse Proxy','tab.auth':'Authentication','tab.admin':'Admin activity','tab.sys':'System logs',
  'tab.fwtrace':'Live rule trace','tab.drppkt':'Packet path',
  'range.15m':'Last 15 minutes','range.1h':'Last hour','range.6h':'Last 6 hours','range.24h':'Last 24 hours','range.7d':'Last 7 days',
@@ -219,7 +219,7 @@ en: {
 },
 es: {
  'app.title':'VISOR DE REGISTROS DEL FIREWALL',
- 'tab.fw':'Tráfico del firewall','tab.ipb':'Bloqueo de IP y geografía','tab.ips':'Protección de red (IPS)','tab.dpi':'Control de aplicaciones (DPI)','tab.dns':'Protección DNS','tab.dropped':'Paquetes descartados','tab.vpn':'VPN',
+ 'tab.fw':'Tráfico del firewall','tab.flows':'Tráfico y aplicaciones','col.application':'Aplicación','col.volume':'Volumen (sal. / ent.)','col.duration':'Duración','col.state':'Estado','badge.active':'Activa','badge.ended':'Terminada','empty.flows':'Sin registros de tráfico en este período. Se recopilan mientras esta página está abierta (al abrirla se listan las conexiones actuales).','tab.ipb':'Bloqueo de IP y geografía','tab.ips':'Protección de red (IPS)','tab.dpi':'Control de aplicaciones (DPI)','tab.dns':'Protección DNS','tab.dropped':'Paquetes descartados','tab.vpn':'VPN',
  'tab.ha':'Alta disponibilidad','tab.rproxy':'Proxy inverso','tab.auth':'Autenticación','tab.admin':'Actividad de administración','tab.sys':'Registros del sistema',
  'tab.fwtrace':'Traza de reglas en vivo','tab.drppkt':'Ruta del paquete',
  'range.15m':'Últimos 15 minutos','range.1h':'Última hora','range.6h':'Últimas 6 horas','range.24h':'Últimas 24 horas','range.7d':'Últimos 7 días',
@@ -264,7 +264,7 @@ es: {
 },
 'pt-BR': {
  'app.title':'VISUALIZADOR DE LOGS DO FIREWALL',
- 'tab.fw':'Tráfego do firewall','tab.ipb':'Bloqueio de IP e geografia','tab.ips':'Proteção de rede (IPS)','tab.dpi':'Controle de aplicações (DPI)','tab.dns':'Proteção DNS','tab.dropped':'Pacotes descartados','tab.vpn':'VPN',
+ 'tab.fw':'Tráfego do firewall','tab.flows':'Tráfego e aplicações','col.application':'Aplicação','col.volume':'Volume (saída / entrada)','col.duration':'Duração','col.state':'Estado','badge.active':'Ativa','badge.ended':'Encerrada','empty.flows':'Sem registros de tráfego neste período. Eles são coletados enquanto esta página está aberta (ao abrir, as conexões atuais são listadas).','tab.ipb':'Bloqueio de IP e geografia','tab.ips':'Proteção de rede (IPS)','tab.dpi':'Controle de aplicações (DPI)','tab.dns':'Proteção DNS','tab.dropped':'Pacotes descartados','tab.vpn':'VPN',
  'tab.ha':'Alta disponibilidade','tab.rproxy':'Proxy reverso','tab.auth':'Autenticação','tab.admin':'Atividade administrativa','tab.sys':'Logs do sistema',
  'tab.fwtrace':'Rastreio de regras ao vivo','tab.drppkt':'Caminho do pacote',
  'range.15m':'Últimos 15 minutos','range.1h':'Última hora','range.6h':'Últimas 6 horas','range.24h':'Últimas 24 horas','range.7d':'Últimos 7 dias',
@@ -364,11 +364,12 @@ function authHeaders(extra){
 
 /* ------------------------------------------------------------------ tabs */
 const PROTO_NAMES = {'1':'ICMP','2':'IGMP','6':'TCP','17':'UDP','41':'IPv6','47':'GRE','50':'ESP','51':'AH','58':'ICMPv6','132':'SCTP'};
-// kind: netfilter | ips | simple | nginx | auth | admin | trace
+// kind: netfilter | flows | ips | simple | nginx | auth | admin | trace
 // Every module tab shows only the DECISIONS of that service (block/allow/login/change), never its
 // startup or debug chatter; the unfiltered stream is always in "System logs".
 const TABS = [
   {id:'fw',     kind:'netfilter', extra:''},
+  {id:'flows',  kind:'flows'},
   {id:'dpi',    kind:'netfilter', extra:'nf_action:~"(?i)^dpi"'},
   {id:'ips',    kind:'ips'},
   {id:'dns',    kind:'simple', base:'app_name:dnsmasq "is NXDOMAIN" !_msg:~"config [0-9a-fA-F:.]+ is NXDOMAIN"'},
@@ -562,6 +563,43 @@ function renderNetfilterRows(rows){
       <td class="clickable" data-k="proto" data-v="${esc(r.proto)}">${esc(proto)}</td>
       <td class="mono">${esc(iface)}</td>
       <td><span class="msg-toggle" data-i="${i}">${esc(t('ui.details'))}</span>${r.src_ip ? `<span class="msg-toggle traceit" ${tr}>${esc(t('ui.trace_this'))}</span>` : ''}<div class="msg-full" id="msg-${i}" style="display:none">${esc(macTxt + act + '\n' + r._msg)}</div></td>
+    </tr>`;
+  }).join(''));
+  bindRowInteractions();
+}
+
+
+/* ---------------------------------------------------- traffic and applications */
+// Records written by the flow collector (ns-flowlog) straight to VictoriaLogs: one per connection that ended, plus the connections that were
+// open when this page opened. They are NOT in the system log. The collector runs only while this page is open.
+function fmtBytes(n){ n = Number(n)||0; const u=['B','KB','MB','GB','TB']; let i=0; while(n>=1024 && i<u.length-1){ n/=1024; i++; } return (i? n.toFixed(n<10?1:0) : n) + ' ' + u[i]; }
+function fmtDur(ms){ ms = Number(ms)||0; if(ms<1000) return ms+' ms'; const s=Math.round(ms/1000); if(s<60) return s+' s'; const m=Math.floor(s/60); return m<60 ? m+' min '+(s%60)+' s' : Math.floor(m/60)+' h '+(m%60)+' min'; }
+async function runFlowsTab(){
+  let core = `_time:${timeRangeVal()} app_name:"nexwall-flow"`;
+  if(freeTextVal()) core += ` "${q(freeTextVal())}"`;
+  const chipQ = buildChipQuery();
+  if(chipQ) core += ` ${chipQ}`;
+  setHead([t('col.time'), t('col.state'), t('col.application'), t('col.source'), t('col.destination'), t('col.protocol'), t('col.volume'), t('col.duration')]);
+  showActionUI(false);
+  await withStats(() => vlQuery(`${core} | sort by (_time) desc`, 300), renderFlowRows, `${core} | stats count() as total`);
+}
+function renderFlowRows(rows){
+  if(!rows.length){ emptyRow(8, t('empty.flows')); return; }
+  setBody(rows.map(r => {
+    const src = r.src_ip ? `${r.src_ip}${r.src_port ? ':'+r.src_port : ''}` : '—';
+    const dst = r.dst_ip ? `${r.dst_ip}${r.dst_port ? ':'+r.dst_port : ''}` : '—';
+    const app = r.application && r.application !== 'Unknown' ? r.application : (r.protocol || '—');
+    const host = r.host ? `<div class="mono" style="color:var(--gray-500)">${esc(r.host)}</div>` : '';
+    const live = r.state === 'active';
+    return `<tr>
+      <td class="mono">${esc(fmtDate(r._time))}</td>
+      <td><span class="badge ${live ? 'other' : 'allow'}">${esc(live ? t('badge.active') : t('badge.ended'))}</span></td>
+      <td class="clickable" data-k="application" data-v="${esc(r.application)}">${esc(app)}${host}</td>
+      <td class="mono clickable" data-k="src_ip" data-v="${esc(r.src_ip)}">${esc(src)}</td>
+      <td class="mono clickable" data-k="dst_ip" data-v="${esc(r.dst_ip)}">${esc(dst)}</td>
+      <td class="clickable" data-k="protocol" data-v="${esc(r.protocol)}">${esc(r.protocol || PROTO_NAMES[r.proto] || '—')}</td>
+      <td class="mono">${esc(fmtBytes(r.bytes_out))} / ${esc(fmtBytes(r.bytes_in))}</td>
+      <td class="mono">${esc(fmtDur(r.duration_ms))}</td>
     </tr>`;
   }).join(''));
   bindRowInteractions();
@@ -838,6 +876,7 @@ function bindRowInteractions(){
 function runQuery(){
   switch(activeTab.kind){
     case 'netfilter': return runNetfilterTab();
+    case 'flows': return runFlowsTab();
     case 'ips': return runIpsTab();
     case 'nginx': return runNginxTab();
     case 'auth': return runAuthTab();

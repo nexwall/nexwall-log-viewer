@@ -1,0 +1,216 @@
+#!/usr/bin/python3
+
+#
+# Copyright (C) 2026 Nexwall
+# SPDX-License-Identifier: GPL-2.0-only
+#
+
+"""
+ns-flowlog: traffic and application records for the Nexwall Log Viewer, WITHOUT the system log.
+
+The traffic engine already knows, for every connection, the application, protocol, host name, bytes each way and duration
+(ns-flows keeps the table on 127.0.0.1:8080). This service turns each connection that ended into ONE record and writes it
+straight to VictoriaLogs (HTTP jsonline). Nothing goes through syslog or /var/log/messages.
+
+It works only while somebody is looking: the Log Viewer queries VictoriaLogs, and the query counter of VictoriaLogs tells us
+the page is open. While nobody queries (for GRACE seconds) it does not even read the flow table. When the page opens it first
+writes a snapshot of the connections that are open right now, so the new tab is not empty.
+Design and limits: nexwall-internal msp/LOG_VIEWER_FLOW_LOG.md and msp/LOG_VIEWER_PERSISTENCE.md.
+"""
+
+import json
+import re
+import signal
+import sys
+import time
+import urllib.error
+import urllib.request
+
+FLOWS_URL = 'http://127.0.0.1:8080/flows'
+VL = 'http://127.0.0.1:9428'
+POLL = 10               # seconds between reads of the flow table while the viewer is open
+IDLE_POLL = 15          # seconds between looks at VictoriaLogs while it is closed
+GRACE = 300             # the viewer counts as open for this long after its last query
+END_IDLE_MS = 30000     # a connection with no traffic for this long has ended
+TOMBSTONE_S = 180       # remember ended connections this long (ns-flows keeps expired flows for a while)
+SNAPSHOT_MAX = 2000
+TRACK_MAX = 20000
+BATCH_MAX = 2000
+PROTO = {1: 'ICMP', 6: 'TCP', 17: 'UDP', 47: 'GRE', 50: 'ESP', 58: 'ICMPv6', 132: 'SCTP'}
+QUERY_COUNT = re.compile(r'^vl_http_request_duration_seconds_count\{path="/select/logsql/query"\}\s+(\d+)', re.M)
+
+
+def iso(ms):
+    return time.strftime('%Y-%m-%dT%H:%M:%S', time.gmtime(ms / 1000)) + '.%03dZ' % (ms % 1000)
+
+
+def to_record(item, state, now_ms=None):
+    """One flow of the ns-flows table -> the record that is stored. The source is the side that opened the connection."""
+    f = item.get('flow', item)
+    local_origin = f.get('local_origin', True)
+    if local_origin:
+        src, dst = f.get('local_ip', ''), f.get('other_ip', '')
+        sport, dport = f.get('local_port', 0), f.get('other_port', 0)
+        out_b, in_b = f.get('local_bytes', 0), f.get('other_bytes', 0)
+        mac = f.get('local_mac', '')
+    else:
+        src, dst = f.get('other_ip', ''), f.get('local_ip', '')
+        sport, dport = f.get('other_port', 0), f.get('local_port', 0)
+        out_b, in_b = f.get('other_bytes', 0), f.get('local_bytes', 0)
+        mac = f.get('other_mac', '')
+    first, last = f.get('first_seen_at') or 0, f.get('last_seen_at') or 0
+    app = f.get('detected_application_name') or ''
+    proto = f.get('detected_protocol_name') or ''
+    host = f.get('host_server_name') or ''
+    ipproto = PROTO.get(f.get('ip_protocol'), str(f.get('ip_protocol', '')))
+    stamp = last if state == 'ended' else (now_ms or last)
+    return {
+        '_time': iso(stamp or int(time.time() * 1000)),
+        '_msg': '%s %s:%s -> %s:%s %s %d/%d bytes%s' % (app or proto or ipproto, src, sport, dst, dport, ipproto, out_b, in_b,
+                                                         (' ' + host) if host else ''),
+        'app_name': 'nexwall-flow', 'state': state,
+        'src_ip': src, 'dst_ip': dst, 'src_port': str(sport), 'dst_port': str(dport), 'proto': ipproto,
+        'application': app, 'protocol': proto, 'host': host,
+        'bytes_out': str(out_b), 'bytes_in': str(in_b), 'packets': str(f.get('total_packets', 0)),
+        'duration_ms': str(max(last - first, 0)), 'interface': item.get('interface', ''), 'src_mac': mac,
+    }
+
+
+class Tracker:
+    """Follows the flow table between two reads and decides which connections have ended."""
+
+    def __init__(self):
+        self.live = {}        # digest -> last item seen
+        self.done = {}        # digest -> time it ended (tombstones)
+
+    def reset(self):
+        self.live.clear()
+        self.done.clear()
+
+    def update(self, items, now_ms):
+        """-> list of items that ended since the last call. Items still active are remembered."""
+        ended = []
+        present = set()
+        for item in items:
+            f = item.get('flow', {})
+            key = f.get('digest')
+            if not key or key in self.done:
+                continue
+            for prev in f.get('digest_prev') or []:      # the engine re-keys a flow when detection finishes
+                if prev != key and prev in self.live:
+                    self.live.pop(prev)
+            present.add(key)
+            if now_ms - (f.get('last_seen_at') or 0) > END_IDLE_MS:
+                self.live.pop(key, None)
+                self.done[key] = now_ms
+                ended.append(item)
+            else:
+                if len(self.live) < TRACK_MAX or key in self.live:
+                    self.live[key] = item
+        for key in [k for k in self.live if k not in present]:      # gone from the table: ended
+            ended.append(self.live.pop(key))
+            self.done[key] = now_ms
+        for key in [k for k, t in self.done.items() if now_ms - t > TOMBSTONE_S * 1000]:
+            del self.done[key]
+        return ended
+
+    def snapshot(self, items, now_ms):
+        """Connections that are open right now (for the moment the viewer opens); they are tracked from then on."""
+        out = []
+        for item in items:
+            f = item.get('flow', {})
+            if f.get('digest') and now_ms - (f.get('last_seen_at') or 0) <= END_IDLE_MS:
+                out.append(item)
+                self.live[f['digest']] = item
+        out.sort(key=lambda i: (i['flow'].get('local_bytes', 0) + i['flow'].get('other_bytes', 0)), reverse=True)
+        return out[:SNAPSHOT_MAX]
+
+
+def http_get(url, timeout=10):
+    with urllib.request.urlopen(url, timeout=timeout) as r:
+        return r.read()
+
+
+def read_flows():
+    return json.loads(http_get(FLOWS_URL)).get('flows', [])
+
+
+def query_counter():
+    """Number of queries VictoriaLogs has answered since it started, None when it is not running."""
+    try:
+        m = QUERY_COUNT.search(http_get(VL + '/metrics', 5).decode('utf-8', 'replace'))
+        return int(m.group(1)) if m else 0
+    except (OSError, ValueError):
+        return None
+
+
+def store(records):
+    """Write records to VictoriaLogs. True on success."""
+    for i in range(0, len(records), BATCH_MAX):
+        body = '\n'.join(json.dumps(r, separators=(',', ':')) for r in records[i:i + BATCH_MAX]).encode()
+        req = urllib.request.Request(VL + '/insert/jsonline?_stream_fields=app_name&_msg_field=_msg&_time_field=_time',
+                                     data=body, headers={'Content-Type': 'application/stream+json'})
+        try:
+            with urllib.request.urlopen(req, timeout=10) as r:
+                if r.status != 200:
+                    return False
+        except (OSError, urllib.error.URLError):
+            return False
+    return True
+
+
+class Service:
+    def __init__(self, now=time.time, sleep=time.sleep, counter=query_counter, flows=read_flows, write=store):
+        self.now, self.sleep, self.counter, self.flows, self.write = now, sleep, counter, flows, write
+        self.tracker = Tracker()
+        self.last_count = None
+        self.last_active = 0.0
+        self.open = False
+
+    def viewer_open(self):
+        n = self.counter()
+        t = self.now()
+        if n is None:                     # VictoriaLogs is not running: nothing to feed
+            self.last_count = None
+            return False
+        if self.last_count is not None and n > self.last_count:
+            self.last_active = t
+        self.last_count = n
+        return t - self.last_active < GRACE
+
+    def step(self):
+        """One round; returns the number of records written (0 when closed)."""
+        is_open = self.viewer_open()
+        if not is_open:
+            if self.open:
+                self.tracker.reset()
+                self.open = False
+            return 0
+        now_ms = int(self.now() * 1000)
+        try:
+            items = self.flows()
+        except (OSError, ValueError):
+            return 0
+        records = []
+        if not self.open:
+            self.open = True
+            records += [to_record(i, 'active', now_ms) for i in self.tracker.snapshot(items, now_ms)]
+        else:
+            records += [to_record(i, 'ended') for i in self.tracker.update(items, now_ms)]
+        if records and not self.write(records):
+            return 0
+        return len(records)
+
+    def run(self):
+        while True:
+            self.step()
+            self.sleep(POLL if self.open else IDLE_POLL)
+
+
+def main():
+    signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
+    Service().run()
+
+
+if __name__ == '__main__':
+    main()

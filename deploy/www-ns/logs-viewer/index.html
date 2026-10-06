@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Nexwall Log Viewer</title>
+<title>FIREWALL LOG VIEWER</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <style>
 :root{
   --blue:#4f46e5; --blue-dark:#4338ca;
@@ -27,7 +28,13 @@ header{background:var(--card);border-bottom:1px solid var(--border);padding:14px
 header h1{font-size:16px;margin:0;font-weight:600;color:var(--gray-900);letter-spacing:.02em}
 header h1 span{color:var(--blue-dark)}
 header .right{display:flex;gap:12px;align-items:center;font-size:11px;color:var(--gray-500)}
-header select{padding:4px 6px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--gray-700);font-size:12px}
+.lang{position:relative}
+.lang button{display:flex;align-items:center;padding:6px;border:0;background:none;color:var(--gray-500);cursor:pointer;border-radius:6px}
+.lang button:hover{color:var(--gray-900)}
+.lang ul{position:absolute;right:0;top:100%;z-index:50;margin:6px 0 0;padding:4px;list-style:none;min-width:170px;background:var(--card);border:1px solid var(--border);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.15)}
+.lang li{padding:7px 10px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--gray-700);display:flex;justify-content:space-between;gap:12px}
+.lang li:hover{background:var(--gray-100)}
+.lang li.on::after{content:"\2713";color:var(--blue-dark)}
 .tabs{display:flex;gap:2px;padding:0 20px;background:var(--card);border-bottom:1px solid var(--border);overflow-x:auto}
 .tab{padding:10px 14px;cursor:pointer;font-weight:500;color:var(--gray-500);border-bottom:2px solid transparent;font-size:12.5px;white-space:nowrap}
 .tab.active{color:var(--blue-dark);border-bottom-color:var(--blue-dark)}
@@ -87,14 +94,15 @@ footer.note{padding:8px 20px;color:var(--gray-500);font-size:11px}
 </head>
 <body>
 <header>
-  <h1>NEXWALL <span data-i18n="app.title">Log Viewer</span></h1>
+  <h1 data-i18n="app.title">FIREWALL LOG VIEWER</h1>
   <div class="right">
     <span id="lastUpdate">—</span>
-    <select id="langSel" title="Language" aria-label="Language">
-      <option value="en">English</option>
-      <option value="es">Español</option>
-      <option value="pt-BR">Português (BR)</option>
-    </select>
+    <div class="lang" id="langBox">
+      <button type="button" id="langBtn" title="Language" aria-label="Language" aria-haspopup="true" aria-expanded="false">
+        <svg viewBox="0 0 640 512" width="24" height="20" aria-hidden="true"><path fill="currentColor" d="M0 128C0 92.7 28.7 64 64 64l192 0 48 0 16 0 256 0c35.3 0 64 28.7 64 64l0 256c0 35.3-28.7 64-64 64l-256 0-16 0-48 0L64 448c-35.3 0-64-28.7-64-64L0 128zm320 0l0 256 256 0 0-256-256 0zM178.3 175.9c-3.2-7.2-10.4-11.9-18.3-11.9s-15.1 4.7-18.3 11.9l-64 144c-4.5 10.1 .1 21.9 10.2 26.4s21.9-.1 26.4-10.2l8.9-20.1 73.6 0 8.9 20.1c4.5 10.1 16.3 14.6 26.4 10.2s14.6-16.3 10.2-26.4l-64-144zM160 233.2L179 276l-38 0 19-42.8zM448 164c11 0 20 9 20 20l0 4 44 0 16 0c11 0 20 9 20 20s-9 20-20 20l-2 0-1.6 4.5c-8.9 24.4-22.4 46.6-39.6 65.4c.9 .6 1.8 1.1 2.7 1.6l18.9 11.3c9.5 5.7 12.5 18 6.9 27.4s-18 12.5-27.4 6.9l-18.9-11.3c-4.5-2.7-8.8-5.5-13.1-8.5c-10.6 7.5-21.9 14-34 19.4l-3.6 1.6c-10.1 4.5-21.9-.1-26.4-10.2s.1-21.9 10.2-26.4l3.6-1.6c6.4-2.9 12.6-6.1 18.5-9.8l-12.2-12.2c-7.8-7.8-7.8-20.5 0-28.3s20.5-7.8 28.3 0l14.6 14.6 .5 .5c12.4-13.1 22.5-28.3 29.8-45L448 228l-72 0c-11 0-20-9-20-20s9-20 20-20l52 0 0-4c0-11 9-20 20-20z"/></svg>
+      </button>
+      <ul id="langMenu" role="menu" hidden></ul>
+    </div>
   </div>
 </header>
 <div class="tabs" id="tabsBar"></div>
@@ -165,8 +173,8 @@ let currentRows = [];   // last rendered table (array of arrays of strings) - wh
 /* ------------------------------------------------------------------ i18n */
 const I18N = {
 en: {
- 'app.title':'Log Viewer',
- 'tab.fw':'Firewall traffic','tab.ipb':'IP & Geo Blocking','tab.ips':'IPS / IDS','tab.dpi':'DPI','tab.dns':'DNS Filtering','tab.vpn':'VPN',
+ 'app.title':'FIREWALL LOG VIEWER',
+ 'tab.fw':'Firewall traffic','tab.ipb':'IP & Geo Block','tab.ips':'Network Protection (IPS)','tab.dpi':'Application Control (DPI)','tab.dns':'DNS Protection','tab.dropped':'Dropped Packets','tab.vpn':'VPN',
  'tab.ha':'High Availability','tab.rproxy':'Reverse Proxy','tab.auth':'Authentication','tab.admin':'Admin activity','tab.sys':'System logs',
  'tab.fwtrace':'Live rule trace','tab.drppkt':'Packet path',
  'range.15m':'Last 15 minutes','range.1h':'Last hour','range.6h':'Last 6 hours','range.24h':'Last 24 hours','range.7d':'Last 7 days',
@@ -199,17 +207,19 @@ en: {
  'empty.auth':'No login events in this period.',
  'empty.admin':'No configuration changes in this period.',
  'empty.generic':'No logs found for this category in the selected period.',
+ 'empty.fw':'No logged traffic in this period. Blocked traffic and the traffic of rules that have logging switched on appear here. Allowed traffic is not logged by default (a line for every connection would flood a busy firewall): see Flows, Top talkers and Traffic analytics, or switch logging on in a firewall rule.',
  'trace.host':'To host','trace.src_host':'From host','trace.net':'To network','trace.src_net':'From network','trace.port':'To port','trace.src_port':'From port','trace.proto':'Protocol',
  'trace.duration':'Duration','trace.both':'Both directions','trace.start':'Start trace','trace.stop':'Stop','trace.running':'Tracing… {n} flow(s)','trace.finished':'Finished · {n} flow(s)',
  'trace.need_filter':'Give at least one of: host, network, port or protocol.','trace.busy':'Another trace is already running on this firewall.','trace.err':'Could not start the trace',
  'trace.none':'Waiting for traffic that matches the filter… Generate some (open the site, ping, …).',
  'trace.desc_fw':'Follows routed and NAT traffic in real time and shows, for each flow, the decision, the exact rule that made it and why (firewall rule, zone policy, DPI, IP & Geo Blocking). It only observes; nothing is changed.',
  'trace.desc_dr':'Like Live rule trace, plus traffic to the firewall itself, and it lists every rule the packet crossed. It only observes; nothing is changed.',
+ 'trace.desc_dp':'Follows packets in real time and lists only the ones the firewall drops or rejects, with the rule that stopped each one and every rule it crossed. Includes traffic to the firewall itself. It only observes; nothing is changed.',
  'trace.path':'rule path','col.decision':'Decision'
 },
 es: {
- 'app.title':'Visor de registros',
- 'tab.fw':'Tráfico del firewall','tab.ipb':'Bloqueo de IP y geografía','tab.ips':'IPS / IDS','tab.dpi':'DPI','tab.dns':'Filtrado DNS','tab.vpn':'VPN',
+ 'app.title':'VISOR DE REGISTROS DEL FIREWALL',
+ 'tab.fw':'Tráfico del firewall','tab.ipb':'Bloqueo de IP y geografía','tab.ips':'Protección de red (IPS)','tab.dpi':'Control de aplicaciones (DPI)','tab.dns':'Protección DNS','tab.dropped':'Paquetes descartados','tab.vpn':'VPN',
  'tab.ha':'Alta disponibilidad','tab.rproxy':'Proxy inverso','tab.auth':'Autenticación','tab.admin':'Actividad de administración','tab.sys':'Registros del sistema',
  'tab.fwtrace':'Traza de reglas en vivo','tab.drppkt':'Ruta del paquete',
  'range.15m':'Últimos 15 minutos','range.1h':'Última hora','range.6h':'Últimas 6 horas','range.24h':'Últimas 24 horas','range.7d':'Últimos 7 días',
@@ -242,17 +252,19 @@ es: {
  'empty.auth':'Sin eventos de inicio de sesión en este período.',
  'empty.admin':'Sin cambios de configuración en este período.',
  'empty.generic':'No hay registros de esta categoría en el período seleccionado.',
+ 'empty.fw':'No hay tráfico registrado en este período. Aquí aparece el tráfico bloqueado y el de las reglas con el registro activado. El tráfico permitido no se registra de forma predeterminada (una línea por conexión inundaría un firewall ocupado): vea Flujos, Principales consumidores y Análisis de tráfico, o active el registro en una regla del firewall.',
  'trace.host':'Al host','trace.src_host':'Desde el host','trace.net':'A la red','trace.src_net':'Desde la red','trace.port':'Al puerto','trace.src_port':'Desde el puerto','trace.proto':'Protocolo',
  'trace.duration':'Duración','trace.both':'Ambos sentidos','trace.start':'Iniciar traza','trace.stop':'Detener','trace.running':'Trazando… {n} flujo(s)','trace.finished':'Terminado · {n} flujo(s)',
  'trace.need_filter':'Indique al menos uno: host, red, puerto o protocolo.','trace.busy':'Ya hay otra traza en curso en este firewall.','trace.err':'No se pudo iniciar la traza',
  'trace.none':'Esperando tráfico que coincida con el filtro… Genere tráfico (abra el sitio, ping, …).',
  'trace.desc_fw':'Sigue en tiempo real el tráfico enrutado y con NAT y muestra, por flujo, la decisión, la regla exacta que la tomó y por qué (regla de firewall, política de zona, DPI, bloqueo de IP y geografía). Solo observa; no cambia nada.',
  'trace.desc_dr':'Como la traza de reglas en vivo, más el tráfico hacia el propio firewall, y lista todas las reglas que cruzó el paquete. Solo observa; no cambia nada.',
+ 'trace.desc_dp':'Sigue los paquetes en tiempo real y lista solo los que el firewall descarta o rechaza, con la regla que detuvo cada uno y todas las reglas que cruzó. Incluye el tráfico hacia el propio firewall. Solo observa; no cambia nada.',
  'trace.path':'ruta de reglas','col.decision':'Decisión'
 },
 'pt-BR': {
- 'app.title':'Visualizador de logs',
- 'tab.fw':'Tráfego do firewall','tab.ipb':'Bloqueio de IP e geografia','tab.ips':'IPS / IDS','tab.dpi':'DPI','tab.dns':'Filtro de DNS','tab.vpn':'VPN',
+ 'app.title':'VISUALIZADOR DE LOGS DO FIREWALL',
+ 'tab.fw':'Tráfego do firewall','tab.ipb':'Bloqueio de IP e geografia','tab.ips':'Proteção de rede (IPS)','tab.dpi':'Controle de aplicações (DPI)','tab.dns':'Proteção DNS','tab.dropped':'Pacotes descartados','tab.vpn':'VPN',
  'tab.ha':'Alta disponibilidade','tab.rproxy':'Proxy reverso','tab.auth':'Autenticação','tab.admin':'Atividade administrativa','tab.sys':'Logs do sistema',
  'tab.fwtrace':'Rastreio de regras ao vivo','tab.drppkt':'Caminho do pacote',
  'range.15m':'Últimos 15 minutos','range.1h':'Última hora','range.6h':'Últimas 6 horas','range.24h':'Últimas 24 horas','range.7d':'Últimos 7 dias',
@@ -285,12 +297,14 @@ es: {
  'empty.auth':'Nenhum evento de login no período.',
  'empty.admin':'Nenhuma alteração de configuração no período.',
  'empty.generic':'Nenhum log encontrado para esta categoria no período selecionado.',
+ 'empty.fw':'Nenhum tráfego registrado neste período. Aqui aparecem o tráfego bloqueado e o das regras com registro ligado. O tráfego permitido não é registrado por padrão (uma linha por conexão inundaria um firewall movimentado): veja Fluxos, Maiores consumidores e Análise de tráfego, ou ligue o registro em uma regra do firewall.',
  'trace.host':'Para o host','trace.src_host':'Do host','trace.net':'Para a rede','trace.src_net':'Da rede','trace.port':'Para a porta','trace.src_port':'Da porta','trace.proto':'Protocolo',
  'trace.duration':'Duração','trace.both':'Ambos os sentidos','trace.start':'Iniciar rastreio','trace.stop':'Parar','trace.running':'Rastreando… {n} fluxo(s)','trace.finished':'Concluído · {n} fluxo(s)',
  'trace.need_filter':'Informe ao menos um: host, rede, porta ou protocolo.','trace.busy':'Já há outro rastreio em andamento neste firewall.','trace.err':'Não foi possível iniciar o rastreio',
  'trace.none':'Aguardando tráfego que corresponda ao filtro… Gere tráfego (abra o site, ping, …).',
  'trace.desc_fw':'Acompanha em tempo real o tráfego roteado e com NAT e mostra, por fluxo, a decisão, a regra exata que a tomou e o motivo (regra de firewall, política da zona, DPI, bloqueio de IP e geografia). Apenas observa; nada é alterado.',
  'trace.desc_dr':'Como o rastreio de regras ao vivo, mais o tráfego para o próprio firewall, e lista todas as regras que o pacote atravessou. Apenas observa; nada é alterado.',
+ 'trace.desc_dp':'Acompanha os pacotes em tempo real e lista apenas os que o firewall descarta ou rejeita, com a regra que parou cada um e todas as regras que ele atravessou. Inclui o tráfego para o próprio firewall. Apenas observa; nada é alterado.',
  'trace.path':'caminho das regras','col.decision':'Decisão'
 }
 };
@@ -316,7 +330,18 @@ function applyStaticI18n(){
   document.querySelectorAll('[data-i18n]').forEach(el => el.textContent = t(el.dataset.i18n));
   document.querySelectorAll('[data-i18n-ph]').forEach(el => el.placeholder = t(el.dataset.i18nPh));
   document.getElementById('footerNote').textContent = t('ui.source_note');
-  document.getElementById('langSel').value = LANG;
+  document.title = t('app.title');
+  renderLangMenu();
+}
+const LANG_NAMES = {en:'English', es:'Español', 'pt-BR':'Português (BR)'};
+function renderLangMenu(){
+  const ul = document.getElementById('langMenu');
+  ul.innerHTML = Object.keys(LANG_NAMES).map(c => `<li role="menuitem" data-lang="${c}" class="${c===LANG?'on':''}">${LANG_NAMES[c]}</li>`).join('');
+  ul.querySelectorAll('li').forEach(li => li.onclick = () => {
+    LANG = li.dataset.lang; sessionStorage.setItem('nx_logviewer_lang', LANG);
+    ul.hidden = true; document.getElementById('langBtn').setAttribute('aria-expanded', 'false');
+    applyStaticI18n(); selectTab();
+  });
 }
 function fmtDate(v){ return v ? new Date(v).toLocaleString(LOCALES[LANG]) : '—'; }
 
@@ -344,10 +369,10 @@ const PROTO_NAMES = {'1':'ICMP','2':'IGMP','6':'TCP','17':'UDP','41':'IPv6','47'
 // startup or debug chatter; the unfiltered stream is always in "System logs".
 const TABS = [
   {id:'fw',     kind:'netfilter', extra:''},
-  {id:'ipb',    kind:'netfilter', extra:'nf_action:~"(?i)banip"'},
-  {id:'ips',    kind:'ips'},
   {id:'dpi',    kind:'netfilter', extra:'nf_action:~"(?i)^dpi"'},
-  {id:'dns',    kind:'simple', base:'app_name:dnsmasq "is NXDOMAIN"'},
+  {id:'ips',    kind:'ips'},
+  {id:'dns',    kind:'simple', base:'app_name:dnsmasq "is NXDOMAIN" !_msg:~"config [0-9a-fA-F:.]+ is NXDOMAIN"'},
+  {id:'ipb',    kind:'netfilter', extra:'nf_action:~"(?i)banip"'},
   {id:'vpn',    kind:'simple', base:'(app_name:~"(?i)^openvpn" OR app_name:ipsec) ("VERIFY" OR "AUTH_FAILED" OR "Peer Connection Initiated" OR "TLS Error" OR "authentication of" OR "established successfully" OR "giving up after" OR "deleting IKE_SA" OR "CHILD_SA")'},
   {id:'ha',     kind:'simple', base:'(app_name:~"(?i)keepalived" OR app_name:~"(?i)conntrackd" OR app_name:~"(?i)ns-ha")'},
   {id:'rproxy', kind:'nginx'},
@@ -356,6 +381,8 @@ const TABS = [
   {id:'sys',    kind:'simple', base:''},
   {id:'fwtrace',kind:'trace', tool:'fwtrace', sep:true},
   {id:'drppkt', kind:'trace', tool:'drppkt'},
+  // the same live trace as Packet path (drppkt), showing only the packets the firewall dropped or rejected
+  {id:'dropped',kind:'trace', tool:'drppkt', dropsOnly:true, desc:'trace.desc_dp'},
 ];
 let activeTab = TABS[0];
 function tabLabel(tab){ return t('tab.' + tab.id); }
@@ -365,14 +392,16 @@ function esc(s){ return (s===undefined||s===null) ? '' : String(s).replace(/[&<>
 function q(s){ return String(s).replace(/"/g,''); }   // safe inside a LogsQL "..." literal
 
 function fwRegex(){
-  return '(?P<nf_action>[^:]+): IN=(?P<in_if>[^ ]*) OUT=(?P<out_if>[^ ]*).*?SRC=(?P<src_ip>[^ ]+) DST=(?P<dst_ip>[^ ]+).*?PROTO=(?P<proto>[^ ]+)(?: SPT=(?P<spt>[0-9]+) DPT=(?P<dpt>[0-9]+))?';
+  return '\\s*(?:\\[[^\\]]*\\]\\s*)?(?P<nf_action>[^:\\s][^:]*): IN=(?P<in_if>[^ ]*) OUT=(?P<out_if>[^ ]*).*?SRC=(?P<src_ip>[^ ]+) DST=(?P<dst_ip>[^ ]+).*?PROTO=(?P<proto>[^ ]+)(?: SPT=(?P<spt>[0-9]+) DPT=(?P<dpt>[0-9]+))?';
 }
 function cleanAction(a){ return String(a||'').replace(/^\s*\[[^\]]*\]\s*/, '').trim(); }   // some kernels prefix "[12345.678]"
 
 function classify(action){
   const a = cleanAction(action).toLowerCase();
   if(/reject|drop|banip|dpi|block|deny/.test(a)) return 'block';
-  if(/accept|allow/.test(a)) return 'allow';
+  // a rule that logs its accepted traffic is named by the administrator ("LAN -> WAN"): the arrow, or the words
+  // accept / allow / forward, mark traffic the firewall let through
+  if(/accept|allow|forward|->/.test(a)) return 'allow';
   return 'other';
 }
 function classifyIps(action){
@@ -505,15 +534,15 @@ async function runNetfilterTab(){
   const BLK = 'nf_action:~"(?i)reject|drop|banip|dpi|block"';
   let qy = core;
   if(actionSel === 'block') qy += ` | filter (${BLK})`;
-  if(actionSel === 'allow') qy += ' | filter (nf_action:~"(?i)accept|allow")';
+  if(actionSel === 'allow') qy += ' | filter (nf_action:~"(?i)accept|allow|forward|->" AND NOT ' + BLK + ')';
   qy += ' | sort by (_time) desc';
 
   const cols = [t('col.time'), t('col.action'), t('col.reason'), t('col.source'), t('col.destination'), t('col.protocol'), t('col.interface'), ''];
-  setHead(cols); showActionUI(true);
+  setHead(cols); showActionUI(!tab.blockOnly);
   await withStats(() => vlQuery(qy, 300), renderNetfilterRows, `${core} | stats count() as total`, `${core} | filter (${BLK}) | stats count() as total`);
 }
 function renderNetfilterRows(rows){
-  if(!rows.length){ emptyRow(8, t('ui.none')); return; }
+  if(!rows.length){ emptyRow(8, t('empty.' + activeTab.id) !== 'empty.' + activeTab.id ? t('empty.' + activeTab.id) : t('ui.none')); return; }
   setBody(rows.map((r,i) => {
     const act = cleanAction(r.nf_action);
     const cls = classify(act);
@@ -748,7 +777,7 @@ async function tracePoll(){
   d.lines.forEach(l => { try { trace.rows.push(JSON.parse(l)); } catch(e){} });
   trace.next = d.next;
   renderTraceRows();
-  document.getElementById('tStatus').textContent = d.running ? t('trace.running', {n:trace.rows.length}) : (t('trace.finished', {n:trace.rows.length}) + (d.error ? ' · ' + d.error.trim() : ''));
+  document.getElementById('tStatus').textContent = d.running ? t('trace.running', {n:traceShown().length}) : (t('trace.finished', {n:traceShown().length}) + (d.error ? ' · ' + d.error.trim() : ''));
   if(!d.running){ clearInterval(trace.timer); trace.timer = null; traceSetRunning(false); }
 }
 function traceStop(silent){
@@ -759,9 +788,13 @@ function traceStop(silent){
   }
   traceSetRunning(false);
 }
+function traceShown(){
+  // Dropped Packets: only what was dropped or rejected (every decision that is not accept or queue)
+  return activeTab.dropsOnly ? trace.rows.filter(r => r.decision !== 'ACCEPT' && r.decision !== 'QUEUE') : trace.rows;
+}
 function renderTraceRows(){
-  if(!trace.rows.length){ setBody(`<tr><td colspan="7" class="empty">${esc(t('trace.none'))}</td></tr>`); return; }
-  const rows = trace.rows.slice().reverse();
+  if(!traceShown().length){ setBody(`<tr><td colspan="7" class="empty">${esc(t('trace.none'))}</td></tr>`); return; }
+  const rows = traceShown().slice().reverse();
   setBody(rows.map((r,i) => {
     const cls = r.decision === 'ACCEPT' ? 'allow' : (r.decision === 'QUEUE' ? 'other' : 'block');
     const src = r.src + (r.sport && r.sport !== '-' ? ':' + r.sport : '');
@@ -821,7 +854,7 @@ function selectTab(){
   document.getElementById('chips').style.display = isTrace ? 'none' : '';
   document.getElementById('tracePanel').style.display = isTrace ? '' : 'none';
   if(isTrace){
-    document.getElementById('traceDesc').textContent = t(activeTab.tool === 'fwtrace' ? 'trace.desc_fw' : 'trace.desc_dr');
+    document.getElementById('traceDesc').textContent = t(activeTab.desc || (activeTab.tool === 'fwtrace' ? 'trace.desc_fw' : 'trace.desc_dr'));
     traceHead(); renderTraceRows();
     document.getElementById('tStatus').textContent = '';
   } else {
@@ -861,7 +894,15 @@ document.getElementById('btnExport').onclick = exportCsv;
 document.getElementById('autoRefresh').onchange = setupAutoRefresh;
 document.getElementById('tStart').onclick = traceStart;
 document.getElementById('tStop').onclick = () => traceStop(false);
-document.getElementById('langSel').onchange = e => { LANG = e.target.value; sessionStorage.setItem('nx_logviewer_lang', LANG); applyStaticI18n(); selectTab(); };
+document.getElementById('langBtn').onclick = e => {
+  e.stopPropagation();
+  const ul = document.getElementById('langMenu');
+  ul.hidden = !ul.hidden;
+  e.currentTarget.setAttribute('aria-expanded', String(!ul.hidden));
+};
+document.addEventListener('click', () => { document.getElementById('langMenu').hidden = true; });
+// opened as a window of its own: use the whole screen
+try { window.moveTo(0, 0); window.resizeTo(screen.availWidth, screen.availHeight); } catch(e) {}
 window.addEventListener('beforeunload', () => traceStop(true));
 
 applyStaticI18n();

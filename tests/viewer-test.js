@@ -11,7 +11,7 @@ const ctx = { document:doc, window:{addEventListener(){}}, navigator:{language:'
   setInterval(){return 1}, clearInterval(){}, setTimeout(){}, console, Blob:function(){}, URL:{createObjectURL(){},revokeObjectURL(){}} };
 ctx.globalThis = ctx;
 vm.createContext(ctx);
-vm.runInContext(js + '\n;globalThis.__x = {I18N,t,describeReason,tReason,classify,parseAuth,cleanAction,macsOf,TABS,fmtBytes,fmtDur,fwRegex,setLang:(l)=>{LANG=l}};', ctx);
+vm.runInContext(js + '\n;globalThis.__x = {I18N,t,describeReason,tReason,classify,parseAuth,cleanAction,macsOf,TABS,classifyWebProt,fmtBytes,fmtDur,fwRegex,setLang:(l)=>{LANG=l}};', ctx);
 const X = ctx.__x; let fail = 0;
 const ok = (c, m) => { if(!c){ console.log('FAIL', m); fail++; } else console.log('ok  ', m); };
 
@@ -53,4 +53,22 @@ for (const line of [' DPI block: IN=br-lan OUT= SRC=1.1.1.1 DST=2.2.2.2 PROTO=TC
   const m = re.exec(line);
   ok(m && /^dpi/i.test(m.groups.nf_action) && m.groups.src_ip === '1.1.1.1', 'nf_action clean: ' + JSON.stringify(m && m.groups.nf_action));
 }
+// 9. Web Protection tab: the decisions of the proxy, the antivirus, the sandbox and the category block page
+ok(X.TABS.some(t => t.id === 'webprot' && t.kind === 'webprot'), 'webprot tab exists');
+X.setLang('en');
+let w = X.classifyWebProt({app_name:'nexwall-av', _msg:'page-blocked client=192.168.1.20 host=casadeapostas.com category=gambling ref=BCCFD8F9 rule=BP test'});
+ok(w.ev === 'page' && w.cls === 'block' && w.client === '192.168.1.20' && w.target === 'casadeapostas.com' && /gambling/.test(w.detail) && /BCCFD8F9/.test(w.detail) && /BP test/.test(w.detail), 'block page line: ' + JSON.stringify(w));
+w = X.classifyWebProt({app_name:'nexwall-av', _msg:'page-blocked client=10.0.0.5 host=x.example category=gambling rule=Staff'});
+ok(w.ev === 'page' && !/Reference/.test(w.detail), 'block page line without a reference (older versions)');
+w = X.classifyWebProt({app_name:'nexwall-av', _msg:'blocked client=192.168.1.150 reason=infected clamav: Eicar-Test-Signature; yara: eicar size=68'});
+ok(w.ev === 'av' && w.cls === 'block' && /Eicar/.test(w.detail), 'antivirus block');
+w = X.classifyWebProt({app_name:'nexwall-av', _msg:'blocked client=192.168.1.150 reason=sandbox the sandbox judged it malicious size=2048'});
+ok(w.ev === 'sandbox', 'sandbox hold block');
+w = X.classifyWebProt({app_name:'nexwall-sandbox', _msg:'verdict sha=0123456789abcdef verdict=malicious client=192.168.1.9 name=setup.exe'});
+ok(w.ev === 'verdict' && w.cls === 'block' && w.target === 'setup.exe', 'sandbox verdict');
+w = X.classifyWebProt({app_name:'squid-web', _msg:'1791471154.601      0 192.168.1.242 NONE_NONE/409 3907 CONNECT assets.msn.com:443 - HIER_NONE/- text/html'});
+ok(w.ev === 'proxy' && w.client === '192.168.1.242' && w.target === 'assets.msn.com:443' && /does not match/.test(w.detail), 'proxy 409: ' + JSON.stringify(w));
+w = X.classifyWebProt({app_name:'nexwall-web-guard', _msg:'license token valid, SSL inspection and family options active'});
+ok(w.ev === 'service' && w.detail.length > 0, 'service line');
+X.setLang('pt-BR'); w = X.classifyWebProt({app_name:'nexwall-av', _msg:'page-blocked client=1.1.1.1 host=a.b category=gambling ref=AAAA1111 rule=R'}); ok(/Categoria gambling, regra R/.test(w.detail) && /Referência AAAA1111/.test(w.detail), 'pt-BR detail: ' + w.detail); X.setLang('en');
 console.log(fail ? `\n${fail} FAILED` : '\nALL PASSED'); process.exit(fail?1:0);

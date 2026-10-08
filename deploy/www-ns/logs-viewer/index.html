@@ -122,6 +122,7 @@ footer.note{padding:8px 20px;color:var(--gray-500);font-size:11px}
     <option value="block" data-i18n="ui.only_blocked"></option>
     <option value="allow" data-i18n="ui.only_allowed"></option>
   </select>
+  <label class="wp-only" style="display:none"><input type="checkbox" id="wpServices"> <span data-i18n="wp.services"></span></label>
   <label><input type="checkbox" id="autoRefresh" checked> <span data-i18n="ui.auto_refresh"></span></label>
   <button class="primary" id="btnSearch" data-i18n="ui.search"></button>
   <button id="btnClear" data-i18n="ui.clear"></button>
@@ -177,6 +178,7 @@ en: {
  'tab.fw':'Firewall traffic','tab.flows':'Traffic and applications','col.application':'Application','col.volume':'Volume (out / in)','col.duration':'Duration','col.state':'State','badge.active':'Active','badge.ended':'Ended','empty.flows':'No traffic records in this period. They are collected while this page is open (and the current connections are listed when it opens).','tab.ipb':'IP & Geo Block','tab.ips':'Network Protection (IPS)','tab.dpi':'Application Control (DPI)','tab.dns':'DNS Protection','tab.dropped':'Dropped Packets','tab.vpn':'VPN',
  'tab.ha':'High Availability','tab.rproxy':'Reverse Proxy','tab.auth':'Authentication','tab.admin':'Admin activity','tab.sys':'System logs',
  'tab.webprot':'Web Protection','col.event':'Event','col.target':'Site or file','wp.ev.page':'Website blocked (block page)','wp.ev.av':'File blocked by the antivirus','wp.ev.sandbox':'File stopped by the sandbox','wp.ev.verdict':'Sandbox verdict','wp.ev.proxy':'Proxy refused a request','wp.ev.service':'Service message','wp.detail_category':'Category {cat}, rule {rule}','wp.ref':'Reference','wp.proxy_409':'the address does not match the name in the connection (for example SafeSearch or a CDN answered differently)','wp.proxy_other':'status {code}','empty.webprot':'No Web Protection events in this period. Blocked websites (block page), files stopped by the antivirus or the sandbox, and requests the proxy refused are listed here; the raw stream is in System logs.',
+ 'wp.services':'Service messages','wp.ev.web_allowed':'Allowed','wp.ev.web_tunnel':'Allowed (not inspected)','wp.ev.web_blocked':'Blocked by the proxy','wp.detail_tunnel':'encrypted, passed through','wp.detail_inspected':'decrypted and scanned',
  'tab.fwtrace':'Live rule trace','tab.drppkt':'Packet path',
  'range.15m':'Last 15 minutes','range.1h':'Last hour','range.6h':'Last 6 hours','range.24h':'Last 24 hours','range.7d':'Last 7 days',
  'ui.search_ph':'Search (IP, free text)...','ui.all_actions':'All actions','ui.only_blocked':'Blocked only','ui.only_allowed':'Allowed only',
@@ -223,6 +225,7 @@ es: {
  'tab.fw':'Tráfico del firewall','tab.flows':'Tráfico y aplicaciones','col.application':'Aplicación','col.volume':'Volumen (sal. / ent.)','col.duration':'Duración','col.state':'Estado','badge.active':'Activa','badge.ended':'Terminada','empty.flows':'Sin registros de tráfico en este período. Se recopilan mientras esta página está abierta (al abrirla se listan las conexiones actuales).','tab.ipb':'Bloqueo de IP y geografía','tab.ips':'Protección de red (IPS)','tab.dpi':'Control de aplicaciones (DPI)','tab.dns':'Protección DNS','tab.dropped':'Paquetes descartados','tab.vpn':'VPN',
  'tab.ha':'Alta disponibilidad','tab.rproxy':'Proxy inverso','tab.auth':'Autenticación','tab.admin':'Actividad de administración','tab.sys':'Registros del sistema',
  'tab.webprot':'Web Protection','col.event':'Evento','col.target':'Sitio o archivo','wp.ev.page':'Sitio bloqueado (página de bloqueo)','wp.ev.av':'Archivo bloqueado por el antivirus','wp.ev.sandbox':'Archivo detenido por el sandbox','wp.ev.verdict':'Veredicto del sandbox','wp.ev.proxy':'El proxy rechazó una solicitud','wp.ev.service':'Mensaje de servicio','wp.detail_category':'Categoría {cat}, regla {rule}','wp.ref':'Referencia','wp.proxy_409':'la dirección no coincide con el nombre de la conexión (por ejemplo, SafeSearch o un CDN respondió distinto)','wp.proxy_other':'estado {code}','empty.webprot':'Sin eventos de Web Protection en este período. Aquí se listan los sitios bloqueados (página de bloqueo), los archivos detenidos por el antivirus o el sandbox y las solicitudes que el proxy rechazó; el registro bruto está en Registros del sistema.',
+ 'wp.services':'Mensajes del servicio','wp.ev.web_allowed':'Permitido','wp.ev.web_tunnel':'Permitido (sin inspeccionar)','wp.ev.web_blocked':'Bloqueado por el proxy','wp.detail_tunnel':'cifrado, pasó sin inspección','wp.detail_inspected':'descifrado y analizado',
  'tab.fwtrace':'Traza de reglas en vivo','tab.drppkt':'Ruta del paquete',
  'range.15m':'Últimos 15 minutos','range.1h':'Última hora','range.6h':'Últimas 6 horas','range.24h':'Últimas 24 horas','range.7d':'Últimos 7 días',
  'ui.search_ph':'Buscar (IP, texto libre)...','ui.all_actions':'Todas las acciones','ui.only_blocked':'Solo bloqueados','ui.only_allowed':'Solo permitidos',
@@ -269,6 +272,7 @@ es: {
  'tab.fw':'Tráfego do firewall','tab.flows':'Tráfego e aplicações','col.application':'Aplicação','col.volume':'Volume (saída / entrada)','col.duration':'Duração','col.state':'Estado','badge.active':'Ativa','badge.ended':'Encerrada','empty.flows':'Sem registros de tráfego neste período. Eles são coletados enquanto esta página está aberta (ao abrir, as conexões atuais são listadas).','tab.ipb':'Bloqueio de IP e geografia','tab.ips':'Proteção de rede (IPS)','tab.dpi':'Controle de aplicações (DPI)','tab.dns':'Proteção DNS','tab.dropped':'Pacotes descartados','tab.vpn':'VPN',
  'tab.ha':'Alta disponibilidade','tab.rproxy':'Proxy reverso','tab.auth':'Autenticação','tab.admin':'Atividade administrativa','tab.sys':'Logs do sistema',
  'tab.webprot':'Web Protection','col.event':'Evento','col.target':'Site ou arquivo','wp.ev.page':'Site bloqueado (página de bloqueio)','wp.ev.av':'Arquivo bloqueado pelo antivírus','wp.ev.sandbox':'Arquivo barrado pelo sandbox','wp.ev.verdict':'Veredito do sandbox','wp.ev.proxy':'O proxy recusou uma requisição','wp.ev.service':'Mensagem de serviço','wp.detail_category':'Categoria {cat}, regra {rule}','wp.ref':'Referência','wp.proxy_409':'o endereço não corresponde ao nome da conexão (por exemplo, SafeSearch ou um CDN respondeu diferente)','wp.proxy_other':'status {code}','empty.webprot':'Nenhum evento do Web Protection neste período. Aqui aparecem os sites bloqueados (página de bloqueio), os arquivos barrados pelo antivírus ou pelo sandbox e as requisições que o proxy recusou; o registro bruto está em Registros do sistema.',
+ 'wp.services':'Mensagens do serviço','wp.ev.web_allowed':'Permitido','wp.ev.web_tunnel':'Permitido (sem inspeção)','wp.ev.web_blocked':'Bloqueado pelo proxy','wp.detail_tunnel':'criptografado, passou sem inspeção','wp.detail_inspected':'descriptografado e analisado',
  'tab.fwtrace':'Rastreio de regras ao vivo','tab.drppkt':'Caminho do pacote',
  'range.15m':'Últimos 15 minutos','range.1h':'Última hora','range.6h':'Últimas 6 horas','range.24h':'Últimas 24 horas','range.7d':'Últimos 7 dias',
  'ui.search_ph':'Buscar (IP, texto livre)...','ui.all_actions':'Todas as ações','ui.only_blocked':'Somente bloqueados','ui.only_allowed':'Somente permitidos',
@@ -503,7 +507,7 @@ async function vlStats(query){
 function timeRangeVal(){ return document.getElementById('timeRange').value; }
 function freeTextVal(){ return document.getElementById('freeText').value.trim(); }
 function setHead(cols){ document.getElementById('tableHead').innerHTML = '<tr>' + cols.map(c=>`<th>${esc(c)}</th>`).join('') + '</tr>'; }
-function showActionUI(show){ document.querySelectorAll('.action-only').forEach(el => el.style.display = show ? '' : 'none'); }
+function showActionUI(show){ document.querySelectorAll('.action-only').forEach(el => el.style.display = show ? '' : 'none'); document.querySelectorAll('.wp-only').forEach(el => el.style.display = 'none'); }
 function setBody(html){ document.getElementById('tableBody').innerHTML = html; }
 function emptyRow(cols, msg){ setBody(`<tr><td colspan="${cols}" class="empty">${esc(msg)}</td></tr>`); }
 function stamp(label){ document.getElementById('lastUpdate').textContent = label; }
@@ -533,7 +537,7 @@ async function runNetfilterTab(){
   let base = `_time:${timeRangeVal()} app_name:kernel`;
   if(freeTextVal()) base += ` "${q(freeTextVal())}"`;
   const chipQ = buildChipQuery();
-  let core = `${base} | extract_regexp "${fwRegex()}" | filter nf_action:*`;
+  let core = `${base} | extract_regexp \`${fwRegex()}\` | filter nf_action:*`;
   if(tab.extra) core += ` | filter (${tab.extra})`;
   if(chipQ) core += ` | filter (${chipQ})`;
   const BLK = 'nf_action:~"(?i)reject|drop|banip|dpi|block"';
@@ -869,7 +873,10 @@ function openTraceFrom(el){
 /* ------------------------------------------------------- Web Protection tab */
 // Decisions of Web Protection: block pages of category rules, files stopped by the antivirus or the sandbox, requests the proxy refused.
 // Sources: syslog (nexwall-av, nexwall-sandbox, nexwall-web-*) and the proxy's refusals (squid-web, added by nexwall-extra.conf).
-const WEBPROT_Q = '(app_name:~"(?i)^nexwall-(av|sandbox|web.*|gate)" OR app_name:squid-web)';
+const WEBPROT_SERVICES_Q = 'app_name:~"(?i)^nexwall-(av|sandbox|web.*|gate)"';
+const WEBPROT_DECISIONS_Q = '(app_name:~"(?i)^nexwall-(av|sandbox|web.*|gate)" ("page-blocked" OR "blocked client" OR "verdict sha="))';
+const WEBPROT_ALLOWED = '_msg:~"(TCP_TUNNEL|TCP_MISS|TCP_HIT|TCP_REFRESH|TCP_MEM_HIT|TCP_NEGATIVE_HIT)/[23]"';
+const WEBPROT_BLOCKED = '("page-blocked" OR "blocked client" OR _msg:~"TCP_DENIED|/40[39] |/5[0-9][0-9] " OR "verdict=malicious")';
 function classifyWebProt(r){
   const m = String(r._msg||'');
   let x;
@@ -880,16 +887,29 @@ function classifyWebProt(r){
     return {ev: x[2] === 'sandbox' ? 'sandbox' : 'av', cls:'block', client:x[1], target:'', detail: x[2] + (x[3] ? ': ' + x[3] : '')};
   if((x = m.match(/verdict sha=(\S+) verdict=(\S+) client=(\S*) name=(.*)$/)))
     return {ev:'verdict', cls: x[2] === 'malicious' ? 'block' : (x[2] === 'suspicious' ? 'other' : 'allow'), client:x[3], target:x[4], detail:x[2] + ' · ' + x[1]};
-  if(r.app_name === 'squid-web' && (x = m.match(/^\d+\.\d+\s+\d+\s+(\S+)\s+(\S+)\/(\d{3})\s+\d+\s+(\S+)\s+(\S+)/)))
-    return {ev:'proxy', cls:'other', client:x[1], target:x[5],
-            detail: (x[3] === '409' ? t('wp.proxy_409') : t('wp.proxy_other', {code:x[3]})) + ' · ' + x[2] + '/' + x[3]};
+  if(r.app_name === 'squid-web' && (x = m.match(/^\s*\d+\.\d+\s+\d+\s+(\S+)\s+(\S+)\/(\d{3})\s+\d+\s+(\S+)\s+(\S+)/))){
+    const code = x[3], res = x[2], host = x[5].replace(/^https?:\/\//, '').replace(/[\/?].*$/, '');
+    if(code === '409') return {ev:'proxy', cls:'other', client:x[1], target:host, detail:t('wp.proxy_409') + ' · ' + res + '/' + code};
+    if(code === '403' || /DENIED/.test(res)) return {ev:'web_blocked', cls:'block', client:x[1], target:host, detail:res + '/' + code};
+    if(/^5/.test(code)) return {ev:'proxy', cls:'other', client:x[1], target:host, detail:t('wp.proxy_other', {code}) + ' · ' + res + '/' + code};
+    if(/TUNNEL/.test(res)) return {ev:'web_tunnel', cls:'allow', client:x[1], target:host, detail:t('wp.detail_tunnel') + ' · ' + res + '/' + code};
+    return {ev:'web_allowed', cls:'allow', client:x[1], target:host, detail:t('wp.detail_inspected') + ' · ' + x[4] + ' ' + res + '/' + code};
+  }
   return {ev:'service', cls:'other', client:'', target:'', detail:m};
 }
 async function runWebProtTab(){
-  const base = `_time:${timeRangeVal()} ${WEBPROT_Q}` + (freeTextVal() ? ` "${q(freeTextVal())}"` : '');
+  const services = document.getElementById('wpServices').checked;
+  const actionSel = document.getElementById('actionFilter').value;
+  let sel = services ? `(app_name:squid-web OR ${WEBPROT_SERVICES_Q})` : `(app_name:squid-web OR ${WEBPROT_DECISIONS_Q})`;
+  let core = `_time:${timeRangeVal()} ${sel}` + (freeTextVal() ? ` "${q(freeTextVal())}"` : '');
+  const chipQ = buildChipQuery();
+  if(chipQ) core += ` ${chipQ}`;
+  if(actionSel === 'block') core += ` ${WEBPROT_BLOCKED}`;
+  if(actionSel === 'allow') core += ` ${WEBPROT_ALLOWED}`;
   setHead([t('col.time'), t('col.event'), t('col.client'), t('col.target'), t('col.message')]);
-  showActionUI(false);
-  await withStats(() => vlQuery(`${base} | sort by (_time) desc`, 300), renderWebProtRows, `${base} | stats count() as total`);
+  showActionUI(true);
+  document.querySelectorAll('.wp-only').forEach(el => el.style.display = '');
+  await withStats(() => vlQuery(`${core} | sort by (_time) desc`, 300), renderWebProtRows, `${core} | stats count() as total`);
 }
 function renderWebProtRows(rows){
   if(!rows.length){ emptyRow(5, t('empty.webprot')); return; }
@@ -976,6 +996,7 @@ function exportCsv(){
 document.getElementById('btnSearch').onclick = runQuery;
 document.getElementById('timeRange').onchange = runQuery;
 document.getElementById('actionFilter').onchange = runQuery;
+document.getElementById('wpServices').onchange = runQuery;
 document.getElementById('freeText').addEventListener('keydown', e => { if(e.key==='Enter') runQuery(); });
 document.getElementById('btnClear').onclick = () => { filters={}; document.getElementById('freeText').value=''; document.getElementById('actionFilter').value=''; renderChips(); runQuery(); };
 document.getElementById('btnExport').onclick = exportCsv;

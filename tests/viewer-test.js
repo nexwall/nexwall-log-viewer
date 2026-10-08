@@ -71,4 +71,18 @@ ok(w.ev === 'proxy' && w.client === '192.168.1.242' && w.target === 'assets.msn.
 w = X.classifyWebProt({app_name:'nexwall-web-guard', _msg:'license token valid, SSL inspection and family options active'});
 ok(w.ev === 'service' && w.detail.length > 0, 'service line');
 X.setLang('pt-BR'); w = X.classifyWebProt({app_name:'nexwall-av', _msg:'page-blocked client=1.1.1.1 host=a.b category=gambling ref=AAAA1111 rule=R'}); ok(/Categoria gambling, regra R/.test(w.detail) && /Referência AAAA1111/.test(w.detail), 'pt-BR detail: ' + w.detail); X.setLang('en');
-console.log(fail ? `\n${fail} FAILED` : '\nALL PASSED'); process.exit(fail?1:0);
+console.log(fail ? `\n${fail} FAILED` : '\nALL PASSED'); 
+// 10. Web Protection tab shows all web traffic: allowed (tunnel, inspected), blocked and refused
+{
+  const sq = (m) => X.classifyWebProt({app_name:'squid-web', _msg:m});
+  let a = sq('1791474690.123    120 192.168.1.242 TCP_TUNNEL/200 5120 CONNECT www.youtube.com:443 - HIER_DIRECT/142.250.1.1 -');
+  ok(a.ev === 'web_tunnel' && a.cls === 'allow' && a.target === 'www.youtube.com:443' && a.client === '192.168.1.242', 'tunnel is allowed traffic: ' + JSON.stringify(a));
+  a = sq('1791474690.123    120 192.168.1.242 TCP_MISS/200 5120 GET https://example.org/index.html - HIER_DIRECT/1.2.3.4 text/html');
+  ok(a.ev === 'web_allowed' && a.cls === 'allow' && a.target === 'example.org', 'inspected request is allowed traffic: ' + JSON.stringify(a));
+  a = sq('1791474690.123    2 192.168.1.242 NONE_NONE/403 0 GET http://casadeapostas.com/ - HIER_NONE/- -');
+  ok(a.ev === 'web_blocked' && a.cls === 'block', '403 is blocked: ' + JSON.stringify(a));
+  a = sq('1791474690.123    2 192.168.1.242 NONE_NONE/409 0 CONNECT fonts.googleapis.com:443 - HIER_NONE/- -');
+  ok(a.ev === 'proxy' && /does not match/.test(a.detail), '409 is a refusal: ' + a.detail);
+  for (const l of ['en','es','pt-BR']) for (const k of ['wp.services','wp.ev.web_allowed','wp.ev.web_tunnel','wp.ev.web_blocked']) ok(X.I18N[l][k], l + ': ' + k);
+}
+process.exit(fail?1:0);
